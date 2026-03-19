@@ -1,0 +1,124 @@
+/* Detail view */
+.detail-view {
+  padding: var(--space-md);
+}
+
+.detail-view__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.detail-view__back {
+  font-size: 13px;
+}
+
+.detail-view__title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.detail-view__meta {
+  display: flex;
+  gap: var(--space-md);
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-md);
+  font-family: var(--font-mono);
+}
+
+/* Parsed tornado highlights */
+.tornado-highlights {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.tornado-highlights__title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: var(--space-sm);
+  color: var(--color-tor);
+}
+
+.tornado-highlights__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-sm);
+}
+
+.tornado-highlights__item {
+  display: flex;
+  flex-direction: column;
+}
+
+.tornado-highlights__label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tornado-highlights__value {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+/* Raw text */
+.detail-view__raw {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Search form */
+.search-form {
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.search-form__row {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.search-form__label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 60px;
+}
+
+.search-form__input {
+  flex: 1;
+}
+
+.search-form input,
+.search-form select {
+  width: 100%;
+}
+
+.search-results {
+  border-top: 1px solid var(--border-color);
+}
+
+.search-results__count {
+  padding: var(--space-xs) var(--space-md);
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+}

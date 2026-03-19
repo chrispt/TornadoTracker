@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TornadoTracker</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="./styles/variables.css" />
+  <link rel="stylesheet" href="./styles/base.css" />
+  <link rel="stylesheet" href="./styles/main.css" />
+  <link rel="stylesheet" href="./styles/map.css" />
+  <link rel="stylesheet" href="./styles/feed.css" />
+  <link rel="stylesheet" href="./styles/detail.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="app-header" id="app-header"></header>
+
+    <!-- Stats bar -->
+    <div class="stats-bar" id="stats-bar"></div>
+
+    <!-- Sidebar: feed + search -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar__tabs">
+        <button class="sidebar__tab sidebar__tab--active" data-tab="feed">Feed</button>
+        <button class="sidebar__tab" data-tab="search">Search</button>
+      </div>
+      <div class="sidebar__content" id="sidebar-content">
+        <div id="feed-container"></div>
+        <div id="search-container" class="hidden"></div>
+      </div>
+    </div>
+
+    <!-- Main panel: map + detail -->
+    <div class="main-panel" id="main-panel">
+      <div class="main-panel__map" id="map-panel">
+        <div id="map-container"></div>
+      </div>
+      <div class="main-panel__detail hidden" id="detail-panel"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
