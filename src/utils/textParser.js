@@ -40,15 +40,28 @@ export function parseProductText(text, productType = 'PNS') {
   // NWS Damage Survey PNS bulletins are actual tornado surveys — flag, don't return
   const isSurvey = /NWS DAMAGE SURVEY/i.test(upperText);
 
-  // PNS / SVS — look for ...TORNADO... sections
+  // PNS / SVS — extract tornado sections
   const tornadoes = [];
-  const tornadoRegex = /\.\.\.TORNADO\.\.\.([\s\S]*?)(?=\.\.\.(?:TORNADO|HAIL|WIND|FLOOD|SNOW|ICE|FIRE|LIGHTNING)\.\.\.|$$)/gi;
 
-  let match;
-  while ((match = tornadoRegex.exec(text)) !== null) {
-    const section = match[1];
-    const parsed = parseTornadoSection(section);
-    if (parsed) tornadoes.push(parsed);
+  if (isSurvey) {
+    // Damage surveys use .Name... or ...Name... section headers
+    const surveyRegex = /\n\s*\.{1,3}([^.\n][^.]*?)\.{3}\s*\n([\s\S]*?)(?=\n\s*\.{1,3}[^.\n][^.]*?\.{3}\s*\n|&&|\$\$|$)/gi;
+    let match;
+    while ((match = surveyRegex.exec(text)) !== null) {
+      // Skip sections clearly about non-tornado events
+      const name = match[1].toLowerCase();
+      if (/\b(?:hail|wind|flood|snow|ice|lightning|rain)\b/.test(name)) continue;
+      const parsed = parseTornadoSection(match[2]);
+      if (parsed) tornadoes.push(parsed);
+    }
+  } else {
+    // Standard PNS — ...TORNADO... section headers
+    const tornadoRegex = /\.\.\.TORNADO\.\.\.([\s\S]*?)(?=\.\.\.(?:TORNADO|HAIL|WIND|FLOOD|SNOW|ICE|FIRE|LIGHTNING)\.\.\.|$$)/gi;
+    let match;
+    while ((match = tornadoRegex.exec(text)) !== null) {
+      const parsed = parseTornadoSection(match[1]);
+      if (parsed) tornadoes.push(parsed);
+    }
   }
 
   // Fallback: keyword scan if no explicit tornado sections
@@ -111,28 +124,45 @@ export function parseTornadoSection(section) {
   }
 
   // Path length
-  const lengthMatch = section.match(/PATH\s*LENGTH\s*(?::|\.{3})?\s*([\d.]+)\s*(MILES?|MI|KM)/i);
+  const lengthMatch = section.match(/PATH\s*LENGTH\s*(?:\/[^/]*\/)?\s*(?::|\.{3})?\s*([\d.]+)\s*(MILES?|MI|KM)/i);
   if (lengthMatch) {
     data.pathLength = `${lengthMatch[1]} ${lengthMatch[2].toLowerCase()}`;
   }
 
   // Path width
-  const widthMatch = section.match(/PATH\s*WIDTH\s*(?::|\.{3})?\s*([\d.]+)\s*(YARDS?|YDS?|FEET|FT|METERS?|M)\b/i);
+  const widthMatch = section.match(/PATH\s*WIDTH\s*(?:\/[^/]*\/)?\s*(?::|\.{3})?\s*([\d.]+)\s*(YARDS?|YDS?|FEET|FT|METERS?|M)\b/i);
   if (widthMatch) {
     data.pathWidth = `${widthMatch[1]} ${widthMatch[2].toLowerCase()}`;
   }
 
-  // Coordinates — try labeled START/END first, then positional pairs
-  const startMatch = section.match(/START\s*LAT\/?LON[:\s]+(\d{4})\s+(\d{4,5})/i);
-  const endMatch = section.match(/END\s*LAT\/?LON[:\s]+(\d{4})\s+(\d{4,5})/i);
-
-  if (startMatch) {
-    const sc = parseNWSCoords(startMatch[1], startMatch[2]);
-    if (sc) { data.startLat = sc.lat; data.startLon = sc.lon; }
+  // Coordinates — try labeled decimal first (damage surveys), then compressed, then positional
+  const startDecMatch = section.match(/START\s*LAT\/?LON[:\s]+([-]?\d{2,3}\.\d+)\s*[,/]\s*([-]?\d{2,3}\.\d+)/i);
+  if (startDecMatch) {
+    data.startLat = parseFloat(startDecMatch[1]);
+    data.startLon = parseFloat(startDecMatch[2]);
+    if (data.startLon > 0) data.startLon = -data.startLon;
   }
-  if (endMatch) {
-    const ec = parseNWSCoords(endMatch[1], endMatch[2]);
-    if (ec) { data.endLat = ec.lat; data.endLon = ec.lon; }
+  const endDecMatch = section.match(/END\s*LAT\/?LON[:\s]+([-]?\d{2,3}\.\d+)\s*[,/]\s*([-]?\d{2,3}\.\d+)/i);
+  if (endDecMatch) {
+    data.endLat = parseFloat(endDecMatch[1]);
+    data.endLon = parseFloat(endDecMatch[2]);
+    if (data.endLon > 0) data.endLon = -data.endLon;
+  }
+
+  // Try labeled compressed format: START LAT/LON 3456 8912
+  if (!data.startLat) {
+    const startMatch = section.match(/START\s*LAT\/?LON[:\s]+(\d{4})\s+(\d{4,5})/i);
+    if (startMatch) {
+      const sc = parseNWSCoords(startMatch[1], startMatch[2]);
+      if (sc) { data.startLat = sc.lat; data.startLon = sc.lon; }
+    }
+  }
+  if (!data.endLat) {
+    const endMatch = section.match(/END\s*LAT\/?LON[:\s]+(\d{4})\s+(\d{4,5})/i);
+    if (endMatch) {
+      const ec = parseNWSCoords(endMatch[1], endMatch[2]);
+      if (ec) { data.endLat = ec.lat; data.endLon = ec.lon; }
+    }
   }
 
   // Fallback: find all compressed coord pairs positionally
@@ -171,11 +201,23 @@ export function parseTornadoSection(section) {
   if (countyMatch) {
     data.county = countyMatch[1].trim();
   }
+  // Fallback: extract county from location lines like "/ Texas County / MO"
+  if (!data.county) {
+    const locMatch = section.match(/\/\s*([A-Za-z\s]+?)\s+County\s*\//i);
+    if (locMatch) data.county = locMatch[1].trim();
+  }
 
   // State
   const stateMatch = section.match(/\b([A-Z]{2})\s*(?:COUNTY|PARISH|\.\.\.|$)/i);
   if (stateMatch && isStateCode(stateMatch[1])) {
     data.state = stateMatch[1].toUpperCase();
+  }
+  // Fallback: extract state from location lines like "County / MO"
+  if (!data.state) {
+    const stateLocMatch = section.match(/County\s*\/\s*([A-Z]{2})\b/i);
+    if (stateLocMatch && isStateCode(stateLocMatch[1])) {
+      data.state = stateLocMatch[1].toUpperCase();
+    }
   }
 
   // Fatalities

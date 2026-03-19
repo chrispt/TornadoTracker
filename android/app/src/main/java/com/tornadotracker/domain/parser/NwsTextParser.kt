@@ -38,15 +38,29 @@ class NwsTextParser @Inject constructor() {
         // NWS Damage Survey — flag, don't return early
         val isSurvey = upperText.contains("NWS DAMAGE SURVEY")
 
-        // Look for ...TORNADO... sections
-        val tornadoRegex = Regex(
-            """\.\.\.\s*TORNADO\s*\.\.\.([\s\S]*?)(?=\.\.\.\s*(?:TORNADO|HAIL|WIND|FLOOD|SNOW|ICE|FIRE|LIGHTNING)\s*\.\.\.|$)""",
-            RegexOption.IGNORE_CASE
-        )
-
-        val tornadoes = tornadoRegex.findAll(text).mapNotNull { match ->
-            parseTornadoSection(match.groupValues[1])
-        }.toList()
+        // Extract tornado sections
+        val tornadoes = if (isSurvey) {
+            // Damage surveys use .Name... or ...Name... section headers
+            val surveyRegex = Regex(
+                """\n\s*\.{1,3}([^.\n][^.]*?)\.{3}\s*\n([\s\S]*?)(?=\n\s*\.{1,3}[^.\n][^.]*?\.{3}\s*\n|&&|\$\$|$)""",
+                RegexOption.IGNORE_CASE
+            )
+            val nonTornadoPattern = Regex("""\b(?:hail|wind|flood|snow|ice|lightning|rain)\b""", RegexOption.IGNORE_CASE)
+            surveyRegex.findAll(text).mapNotNull { match ->
+                // Skip sections clearly about non-tornado events
+                if (nonTornadoPattern.containsMatchIn(match.groupValues[1])) return@mapNotNull null
+                parseTornadoSection(match.groupValues[2])
+            }.toList()
+        } else {
+            // Standard PNS — ...TORNADO... section headers
+            val tornadoRegex = Regex(
+                """\.\.\.\s*TORNADO\s*\.\.\.([\s\S]*?)(?=\.\.\.\s*(?:TORNADO|HAIL|WIND|FLOOD|SNOW|ICE|FIRE|LIGHTNING)\s*\.\.\.|$)""",
+                RegexOption.IGNORE_CASE
+            )
+            tornadoRegex.findAll(text).mapNotNull { match ->
+                parseTornadoSection(match.groupValues[1])
+            }.toList()
+        }
 
         val hasTornadoContent = tornadoes.isNotEmpty() || isSurvey || hasTornadoKeywords(upperText)
         val subType = if (isSurvey) "PNS_SURVEY" else if (tornadoes.isNotEmpty()) "PNS_TORNADO" else "PNS"
@@ -139,29 +153,47 @@ class NwsTextParser @Inject constructor() {
         }
 
         // Path length
-        val lengthMatch = Regex("""PATH\s*LENGTH\s*(?::|\.{3})?\s*([\d.]+)\s*(MILES?|MI|KM)""", RegexOption.IGNORE_CASE).find(section)
+        val lengthMatch = Regex("""PATH\s*LENGTH\s*(?:/[^/]*/)??\s*(?::|\.{3})?\s*([\d.]+)\s*(MILES?|MI|KM)""", RegexOption.IGNORE_CASE).find(section)
         val pathLength = lengthMatch?.let { "${it.groupValues[1]} ${it.groupValues[2].lowercase()}" }
 
         // Path width
-        val widthMatch = Regex("""PATH\s*WIDTH\s*(?::|\.{3})?\s*([\d.]+)\s*(YARDS?|YDS?|FEET|FT|METERS?|M)\b""", RegexOption.IGNORE_CASE).find(section)
+        val widthMatch = Regex("""PATH\s*WIDTH\s*(?:/[^/]*/)??\s*(?::|\.{3})?\s*([\d.]+)\s*(YARDS?|YDS?|FEET|FT|METERS?|M)\b""", RegexOption.IGNORE_CASE).find(section)
         val pathWidth = widthMatch?.let { "${it.groupValues[1]} ${it.groupValues[2].lowercase()}" }
 
-        // Coordinates — try labeled START/END first, then positional pairs
+        // Coordinates — try labeled decimal first (damage surveys), then compressed, then positional
         var startLat: Double? = null
         var startLon: Double? = null
         var endLat: Double? = null
         var endLon: Double? = null
 
-        val startMatch = Regex("""START\s*LAT/?LON[:\s]+(\d{4})\s+(\d{4,5})""", RegexOption.IGNORE_CASE).find(section)
-        val endCoordMatch = Regex("""END\s*LAT/?LON[:\s]+(\d{4})\s+(\d{4,5})""", RegexOption.IGNORE_CASE).find(section)
-
-        if (startMatch != null) {
-            val sc = parseNWSCoords(startMatch.groupValues[1], startMatch.groupValues[2])
-            if (sc != null) { startLat = sc.lat; startLon = sc.lon }
+        // Try labeled decimal: Start Lat/Lon: 37.1765 / -92.0689
+        val startDecMatch = Regex("""START\s*LAT/?LON[:\s]+([-]?\d{2,3}\.\d+)\s*[,/]\s*([-]?\d{2,3}\.\d+)""", RegexOption.IGNORE_CASE).find(section)
+        if (startDecMatch != null) {
+            startLat = startDecMatch.groupValues[1].toDoubleOrNull()
+            startLon = startDecMatch.groupValues[2].toDoubleOrNull()
+            if (startLon != null && startLon > 0) startLon = -startLon
         }
-        if (endCoordMatch != null) {
-            val ec = parseNWSCoords(endCoordMatch.groupValues[1], endCoordMatch.groupValues[2])
-            if (ec != null) { endLat = ec.lat; endLon = ec.lon }
+        val endDecMatch = Regex("""END\s*LAT/?LON[:\s]+([-]?\d{2,3}\.\d+)\s*[,/]\s*([-]?\d{2,3}\.\d+)""", RegexOption.IGNORE_CASE).find(section)
+        if (endDecMatch != null) {
+            endLat = endDecMatch.groupValues[1].toDoubleOrNull()
+            endLon = endDecMatch.groupValues[2].toDoubleOrNull()
+            if (endLon != null && endLon > 0) endLon = -endLon
+        }
+
+        // Try labeled compressed format: START LAT/LON 3456 8912
+        if (startLat == null) {
+            val startMatch = Regex("""START\s*LAT/?LON[:\s]+(\d{4})\s+(\d{4,5})""", RegexOption.IGNORE_CASE).find(section)
+            if (startMatch != null) {
+                val sc = parseNWSCoords(startMatch.groupValues[1], startMatch.groupValues[2])
+                if (sc != null) { startLat = sc.lat; startLon = sc.lon }
+            }
+        }
+        if (endLat == null) {
+            val endCoordMatch = Regex("""END\s*LAT/?LON[:\s]+(\d{4})\s+(\d{4,5})""", RegexOption.IGNORE_CASE).find(section)
+            if (endCoordMatch != null) {
+                val ec = parseNWSCoords(endCoordMatch.groupValues[1], endCoordMatch.groupValues[2])
+                if (ec != null) { endLat = ec.lat; endLon = ec.lon }
+            }
         }
 
         // Fallback: find all compressed coord pairs positionally
@@ -196,11 +228,24 @@ class NwsTextParser @Inject constructor() {
 
         // County
         val countyMatch = Regex("""(?:IN|NEAR|OF)\s+([A-Z][A-Z\s]+?)\s+COUNTY""", RegexOption.IGNORE_CASE).find(section)
-        val county = countyMatch?.groupValues?.get(1)?.trim()
+        var county = countyMatch?.groupValues?.get(1)?.trim()
+        // Fallback: extract county from location lines like "/ Texas County / MO"
+        if (county == null) {
+            val locMatch = Regex("""/\s*([A-Za-z\s]+?)\s+County\s*/""", RegexOption.IGNORE_CASE).find(section)
+            if (locMatch != null) county = locMatch.groupValues[1].trim()
+        }
 
         // State
         val stateMatch = Regex("""\b([A-Z]{2})\s*(?:COUNTY|PARISH|\.{3}|$)""", RegexOption.IGNORE_CASE).find(section)
-        val state = stateMatch?.groupValues?.get(1)?.uppercase()?.takeIf { it in STATE_CODES }
+        var state = stateMatch?.groupValues?.get(1)?.uppercase()?.takeIf { it in STATE_CODES }
+        // Fallback: extract state from location lines like "County / MO"
+        if (state == null) {
+            val stateLocMatch = Regex("""County\s*/\s*([A-Z]{2})\b""", RegexOption.IGNORE_CASE).find(section)
+            if (stateLocMatch != null) {
+                val code = stateLocMatch.groupValues[1].uppercase()
+                if (code in STATE_CODES) state = code
+            }
+        }
 
         // Fatalities
         val fatMatch = Regex("""(\d+)\s*(?:FATALIT|DEATH|KILLED)""", RegexOption.IGNORE_CASE).find(section)
