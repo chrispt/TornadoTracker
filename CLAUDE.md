@@ -29,7 +29,18 @@ Displays past and recent tornado information using the NWS API.
 - `Promise.allSettled` for parallel multi-type fetches
 - Product details cached in-memory with 30-min TTL
 
+## Android Companion App
+- Located in `android/` subdirectory
+- Kotlin + Jetpack Compose + Material 3, MVVM architecture
+- Hilt DI, Retrofit, Room, WorkManager, osmdroid
+- `android/app/src/main/java/com/tornadotracker/domain/parser/NwsTextParser.kt` — Kotlin port of `src/utils/textParser.js`
+
 ## Commands
 - `npm run dev` — start dev server
 - `npm run build` — production build
 - `npm run preview` — preview production build
+- `cd android && ./gradlew assembleDebug` — build Android app
+
+## Workflow Rules
+- When any change is made to the web app, the corresponding change must also be made to the Android app (e.g., parser logic, API changes, constants, UI behavior)
+- Always commit and push once all tests come back clean

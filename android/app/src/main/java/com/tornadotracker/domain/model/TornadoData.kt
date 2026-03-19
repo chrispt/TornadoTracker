@@ -1,0 +1,20 @@
+package com.tornadotracker.domain.model
+
+data class TornadoData(
+    val efRating: String? = null,
+    val pathLength: String? = null,
+    val pathWidth: String? = null,
+    val lat: Double? = null,
+    val lon: Double? = null,
+    val county: String? = null,
+    val state: String? = null,
+    val fatalities: Int? = null,
+    val injuries: Int? = null,
+    val peakWinds: String? = null,
+    val startTime: String? = null,
+    val endTime: String? = null,
+    val summary: String? = null,
+    val polygon: List<LatLon>? = null
+)
+
+data class LatLon(val lat: Double, val lon: Double)
