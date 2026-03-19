@@ -28,6 +28,20 @@
   font-family: var(--font-mono);
 }
 
+/* PDS banner */
+.detail-view__pds-banner {
+  background: #dc2626;
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.5px;
+  text-align: center;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
+}
+
 /* Parsed tornado highlights */
 .tornado-highlights {
   background: var(--bg-card);

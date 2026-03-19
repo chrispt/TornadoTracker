@@ -48,6 +48,15 @@ function renderDetail() {
   const type = detail.productCode || '';
   const time = formatDate(detail.issuanceTime);
 
+  let pdsBannerHtml = '';
+  if (parsed && parsed.isPDS) {
+    pdsBannerHtml = `
+      <div class="detail-view__pds-banner">
+        Particularly Dangerous Situation
+      </div>
+    `;
+  }
+
   let highlightsHtml = '';
   if (parsed && parsed.tornadoes && parsed.tornadoes.length > 0) {
     highlightsHtml = parsed.tornadoes.map((t, i) => renderTornadoHighlight(t, i)).join('');
@@ -72,6 +81,7 @@ function renderDetail() {
         <span>${type} &middot; ${office}</span>
         <span>${time}</span>
       </div>
+      ${pdsBannerHtml}
       ${highlightsHtml}
       <div class="detail-view__raw">${escapeHtml(detail.productText || 'No text available.')}</div>
     </div>

@@ -18,12 +18,13 @@
  * @returns {{ tornadoes: Array, hasTornadoContent: boolean }}
  */
 export function parseProductText(text, productType = 'PNS') {
-  if (!text) return { tornadoes: [], hasTornadoContent: false, subType: null };
+  if (!text) return { tornadoes: [], hasTornadoContent: false, subType: null, isPDS: false };
 
   const upperText = text.toUpperCase();
+  const isPDS = detectPDS(upperText);
 
   if (productType === 'TOR') {
-    return parseTorWarning(text);
+    return parseTorWarning(text, isPDS);
   }
 
   if (productType === 'LSR') {
@@ -33,12 +34,12 @@ export function parseProductText(text, productType = 'PNS') {
   // Exclude "On This Date In Weather History" PNS bulletins — they mention
   // historical tornadoes but aren't actual damage surveys or reports.
   if (/ON THIS DATE IN WEATHER HISTORY/i.test(upperText)) {
-    return { tornadoes: [], hasTornadoContent: false, subType: null };
+    return { tornadoes: [], hasTornadoContent: false, subType: null, isPDS: false };
   }
 
   // NWS Damage Survey PNS bulletins are actual tornado surveys — always keep
   if (/NWS DAMAGE SURVEY/i.test(upperText)) {
-    return { tornadoes: [], hasTornadoContent: true, subType: 'PNS_SURVEY' };
+    return { tornadoes: [], hasTornadoContent: true, subType: 'PNS_SURVEY', isPDS };
   }
 
   // PNS / SVS — look for ...TORNADO... sections
@@ -55,7 +56,15 @@ export function parseProductText(text, productType = 'PNS') {
   // Fallback: keyword scan if no explicit tornado sections
   const hasTornadoContent = tornadoes.length > 0 || hasTornadoKeywords(upperText);
 
-  return { tornadoes, hasTornadoContent, subType: tornadoes.length > 0 ? 'PNS_TORNADO' : 'PNS' };
+  return { tornadoes, hasTornadoContent, subType: tornadoes.length > 0 ? 'PNS_TORNADO' : 'PNS', isPDS };
+}
+
+/**
+ * Detect "Particularly Dangerous Situation" in product text.
+ * NWS includes this phrase verbatim in PDS-level warnings.
+ */
+function detectPDS(upperText) {
+  return upperText.includes('PARTICULARLY DANGEROUS SITUATION');
 }
 
 /**
@@ -202,7 +211,7 @@ export function parseNWSCoords(latStr, lonStr) {
 /**
  * Parse TOR (tornado warning) product — extract warning polygon.
  */
-function parseTorWarning(text) {
+function parseTorWarning(text, isPDS = false) {
   const polygon = [];
   const latLonMatch = text.match(/LAT\.\.\.LON\s+([\d\s]+)/);
 
@@ -240,7 +249,7 @@ function parseTorWarning(text) {
     });
   }
 
-  return { tornadoes, hasTornadoContent: true, subType: 'TOR' };
+  return { tornadoes, hasTornadoContent: true, subType: isPDS ? 'TOR_PDS' : 'TOR', isPDS };
 }
 
 /**
@@ -282,7 +291,7 @@ function parseLSR(text) {
     }
   }
 
-  return { tornadoes, hasTornadoContent: tornadoes.length > 0 || hasTornadoKeywords(text), subType: 'LSR' };
+  return { tornadoes, hasTornadoContent: tornadoes.length > 0 || hasTornadoKeywords(text), subType: 'LSR', isPDS: false };
 }
 
 /**

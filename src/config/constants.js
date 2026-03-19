@@ -34,6 +34,8 @@ export const MARKER_COLORS = {
 /** Sub-type labels for product cards */
 export const PRODUCT_SUB_TYPES = {
   TOR:         'Tornado Warning',
+  TOR_PDS:     'PDS Tornado Warning',
+  SVR_PDS:     'PDS Severe T-Storm Warning',
   PNS_SURVEY:  'NWS Damage Survey',
   PNS_TORNADO: 'Tornado Report',
   LSR:         'Local Storm Report',

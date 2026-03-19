@@ -71,6 +71,7 @@ async function refreshProducts() {
     if (ALWAYS_TORNADO_TYPES.has(code)) {
       const cached = await fetchAndParseProduct(product);
       product._subType = cached?.parsedData?.subType || null;
+      product._isPDS = cached?.parsedData?.isPDS || false;
       collectMarkers(markers, product, cached);
       return product;
     }
@@ -80,6 +81,7 @@ async function refreshProducts() {
       const cached = await fetchAndParseProduct(product);
       if (cached?.parsedData?.hasTornadoContent) {
         product._subType = cached?.parsedData?.subType || null;
+        product._isPDS = cached?.parsedData?.isPDS || false;
         collectMarkers(markers, product, cached);
         return product;
       }

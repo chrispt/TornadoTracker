@@ -16,12 +16,13 @@ export function renderProductCard(product, isSelected = false) {
   const preview = escapeHtml(truncate(product.productName || '', 60));
   const selectedClass = isSelected ? 'product-card--selected' : '';
   const subTypeLabel = product._subType ? PRODUCT_SUB_TYPES[product._subType] : null;
+  const pdsBadge = product._isPDS ? '<span class="product-card__pds-badge">PDS</span>' : '';
 
   return `
     <div class="product-card ${selectedClass}" data-product-id="${escapeHtml(product.id)}">
       <span class="product-card__type-badge" style="background:${typeInfo.color};">${type}</span>
       <div class="product-card__body">
-        <div class="product-card__office">${office}</div>
+        <div class="product-card__office">${office} ${pdsBadge}</div>
         ${subTypeLabel ? `<div class="product-card__subtype">${subTypeLabel}</div>` : ''}
         <div class="product-card__time">${time}</div>
         <div class="product-card__preview">${preview}</div>

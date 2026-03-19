@@ -23,6 +23,9 @@ function renderStats() {
     typeCounts[code] = (typeCounts[code] || 0) + 1;
   });
 
+  // Count PDS products
+  const pdsCount = products.filter(p => p._isPDS).length;
+
   // Count by EF rating from markers
   const efCounts = {};
   markers.forEach(m => {
@@ -50,6 +53,17 @@ function renderStats() {
       </div>
     `;
   });
+
+  // PDS count (only show when > 0)
+  if (pdsCount > 0) {
+    html += `
+      <div class="stats-bar__item">
+        <span class="stats-bar__dot" style="background:#dc2626;"></span>
+        <span>PDS:</span>
+        <span class="stats-bar__value">${pdsCount}</span>
+      </div>
+    `;
+  }
 
   // Tornado markers count
   if (markers.length > 0) {
