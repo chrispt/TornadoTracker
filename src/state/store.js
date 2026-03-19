@@ -9,7 +9,7 @@ const initialState = {
   searchFilters: { type: 'PNS', office: '', startDate: '', endDate: '', keyword: '' },
   tornadoMarkers: [],
   activeView: 'feed',
-  selectedProductTypes: ['PNS', 'TOR'],
+  selectedProductTypes: ['PNS', 'TOR', 'LSR'],
   refreshInterval: DEFAULT_REFRESH_INTERVAL,
   isLoading: false,
   error: null,

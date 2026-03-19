@@ -36,6 +36,11 @@ export function parseProductText(text, productType = 'PNS') {
     return { tornadoes: [], hasTornadoContent: false };
   }
 
+  // NWS Damage Survey PNS bulletins are actual tornado surveys — always keep
+  if (/NWS DAMAGE SURVEY/i.test(upperText)) {
+    return { tornadoes: [], hasTornadoContent: true };
+  }
+
   // PNS / SVS — look for ...TORNADO... sections
   const tornadoes = [];
   const tornadoRegex = /\.\.\.TORNADO\.\.\.([\s\S]*?)(?=\.\.\.(?:TORNADO|HAIL|WIND|FLOOD|SNOW|ICE|FIRE|LIGHTNING)\.\.\.|$$)/gi;

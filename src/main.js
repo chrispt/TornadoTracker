@@ -40,10 +40,10 @@ async function init() {
 // ── Data Fetching ─────────────────────────────
 
 /** Types that are tornado-related by definition — no content check needed */
-const ALWAYS_TORNADO_TYPES = new Set(['TOR', 'LSR']);
+const ALWAYS_TORNADO_TYPES = new Set(['TOR']);
 
 /** Types that need a content check to confirm tornado relevance */
-const NEEDS_CONTENT_CHECK_TYPES = new Set(['PNS', 'SVS', 'SVR']);
+const NEEDS_CONTENT_CHECK_TYPES = new Set(['PNS', 'SVS', 'SVR', 'LSR']);
 
 async function refreshProducts() {
   const types = store.get('selectedProductTypes');
