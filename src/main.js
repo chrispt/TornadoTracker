@@ -43,7 +43,7 @@ async function init() {
 const ALWAYS_TORNADO_TYPES = new Set(['TOR']);
 
 /** Types that need a content check to confirm tornado relevance */
-const NEEDS_CONTENT_CHECK_TYPES = new Set(['PNS', 'SVS', 'SVR', 'LSR']);
+const NEEDS_CONTENT_CHECK_TYPES = new Set(['PNS', 'LSR']);
 
 async function refreshProducts() {
   const types = store.get('selectedProductTypes');
@@ -76,7 +76,7 @@ async function refreshProducts() {
       return product;
     }
 
-    // PNS/SVS need a content check
+    // PNS/LSR need a content check
     if (NEEDS_CONTENT_CHECK_TYPES.has(code)) {
       const cached = await fetchAndParseProduct(product);
       if (cached?.parsedData?.hasTornadoContent) {
@@ -88,7 +88,6 @@ async function refreshProducts() {
       return null; // Not tornado-relevant
     }
 
-    // Other types (e.g. SVR) — keep in feed but no marker extraction
     return product;
   });
 

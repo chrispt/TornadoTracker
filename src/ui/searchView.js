@@ -75,8 +75,8 @@ async function handleSearch() {
     });
   }
 
-  // Filter PNS/SVS to tornado-only content
-  const needsCheck = new Set(['PNS', 'SVS', 'SVR']);
+  // Filter PNS to tornado-only content
+  const needsCheck = new Set(['PNS']);
   if (needsCheck.has(type)) {
     const checkPromises = results.map(async (product) => {
       try {

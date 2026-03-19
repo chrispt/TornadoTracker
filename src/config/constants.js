@@ -5,8 +5,6 @@ export const API_BASE = 'https://api.weather.gov';
 export const PRODUCT_TYPES = {
   PNS: { code: 'PNS', label: 'Public Information Statement', color: '#3b82f6' },
   TOR: { code: 'TOR', label: 'Tornado Warning', color: '#ef4444' },
-  SVR: { code: 'SVR', label: 'Severe Thunderstorm Warning', color: '#f97316' },
-  SVS: { code: 'SVS', label: 'Severe Weather Statement', color: '#eab308' },
   LSR: { code: 'LSR', label: 'Local Storm Report', color: '#8b5cf6' }
 };
 
@@ -24,10 +22,8 @@ export const EF_SCALE = {
 /** Marker color by product type (for non-EF-rated items) */
 export const MARKER_COLORS = {
   TOR: '#a855f7',
-  SVR: '#f97316',
   PNS: '#3b82f6',
   LSR: '#8b5cf6',
-  SVS: '#eab308',
   DEFAULT: '#6b7280'
 };
 
@@ -35,7 +31,6 @@ export const MARKER_COLORS = {
 export const PRODUCT_SUB_TYPES = {
   TOR:         'Tornado Warning',
   TOR_PDS:     'PDS Tornado Warning',
-  SVR_PDS:     'PDS Severe T-Storm Warning',
   PNS_SURVEY:  'NWS Damage Survey',
   PNS_TORNADO: 'Tornado Report',
   LSR:         'Local Storm Report',
