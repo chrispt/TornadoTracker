@@ -1,4 +1,4 @@
-import { PRODUCT_TYPES } from '../config/constants.js';
+import { PRODUCT_TYPES, PRODUCT_SUB_TYPES } from '../config/constants.js';
 import { timeAgo, truncate, escapeHtml, extractOfficeCode } from '../utils/formatting.js';
 
 /**
@@ -15,12 +15,14 @@ export function renderProductCard(product, isSelected = false) {
   const name = escapeHtml(product.productName || typeInfo.label);
   const preview = escapeHtml(truncate(product.productName || '', 60));
   const selectedClass = isSelected ? 'product-card--selected' : '';
+  const subTypeLabel = product._subType ? PRODUCT_SUB_TYPES[product._subType] : null;
 
   return `
     <div class="product-card ${selectedClass}" data-product-id="${escapeHtml(product.id)}">
       <span class="product-card__type-badge" style="background:${typeInfo.color};">${type}</span>
       <div class="product-card__body">
         <div class="product-card__office">${office}</div>
+        ${subTypeLabel ? `<div class="product-card__subtype">${subTypeLabel}</div>` : ''}
         <div class="product-card__time">${time}</div>
         <div class="product-card__preview">${preview}</div>
       </div>

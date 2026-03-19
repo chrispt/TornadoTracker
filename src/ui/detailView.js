@@ -1,6 +1,7 @@
 import store from '../state/store.js';
 import { EF_SCALE } from '../config/constants.js';
 import { formatDate, escapeHtml, extractOfficeCode } from '../utils/formatting.js';
+import { zoomToLocation, clearHighlight, invalidateMapSize } from './mapView.js';
 
 /**
  * Initialize the detail view — shows full product detail with parsed highlights.
@@ -18,25 +19,29 @@ export function initDetailView() {
         parsedTornadoData: null
       });
       document.getElementById('detail-panel').classList.add('hidden');
-      document.getElementById('map-panel').classList.remove('hidden');
+      document.getElementById('main-panel')?.classList.remove('main-panel--split');
+      clearHighlight();
+      invalidateMapSize();
     }
   });
 }
 
 function renderDetail() {
   const panel = document.getElementById('detail-panel');
-  const mapPanel = document.getElementById('map-panel');
   if (!panel) return;
 
+  const mainPanel = document.getElementById('main-panel');
   const detail = store.get('selectedProductDetail');
   if (!detail) {
     panel.classList.add('hidden');
-    mapPanel?.classList.remove('hidden');
+    mainPanel?.classList.remove('main-panel--split');
+    clearHighlight();
+    invalidateMapSize();
     return;
   }
 
   panel.classList.remove('hidden');
-  mapPanel?.classList.add('hidden');
+  mainPanel?.classList.add('main-panel--split');
 
   const parsed = store.get('parsedTornadoData');
   const office = extractOfficeCode(detail.issuingOffice);
@@ -71,6 +76,15 @@ function renderDetail() {
       <div class="detail-view__raw">${escapeHtml(detail.productText || 'No text available.')}</div>
     </div>
   `;
+
+  // Zoom map to the first tornado's location
+  invalidateMapSize();
+  if (parsed && parsed.tornadoes && parsed.tornadoes.length > 0) {
+    const t = parsed.tornadoes[0];
+    if (t.lat && t.lon) {
+      zoomToLocation({ lat: t.lat, lon: t.lon, polygon: t.polygon });
+    }
+  }
 }
 
 function renderTornadoHighlight(tornado, index) {

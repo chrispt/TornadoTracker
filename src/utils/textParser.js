@@ -18,7 +18,7 @@
  * @returns {{ tornadoes: Array, hasTornadoContent: boolean }}
  */
 export function parseProductText(text, productType = 'PNS') {
-  if (!text) return { tornadoes: [], hasTornadoContent: false };
+  if (!text) return { tornadoes: [], hasTornadoContent: false, subType: null };
 
   const upperText = text.toUpperCase();
 
@@ -33,12 +33,12 @@ export function parseProductText(text, productType = 'PNS') {
   // Exclude "On This Date In Weather History" PNS bulletins — they mention
   // historical tornadoes but aren't actual damage surveys or reports.
   if (/ON THIS DATE IN WEATHER HISTORY/i.test(upperText)) {
-    return { tornadoes: [], hasTornadoContent: false };
+    return { tornadoes: [], hasTornadoContent: false, subType: null };
   }
 
   // NWS Damage Survey PNS bulletins are actual tornado surveys — always keep
   if (/NWS DAMAGE SURVEY/i.test(upperText)) {
-    return { tornadoes: [], hasTornadoContent: true };
+    return { tornadoes: [], hasTornadoContent: true, subType: 'PNS_SURVEY' };
   }
 
   // PNS / SVS — look for ...TORNADO... sections
@@ -55,7 +55,7 @@ export function parseProductText(text, productType = 'PNS') {
   // Fallback: keyword scan if no explicit tornado sections
   const hasTornadoContent = tornadoes.length > 0 || hasTornadoKeywords(upperText);
 
-  return { tornadoes, hasTornadoContent };
+  return { tornadoes, hasTornadoContent, subType: tornadoes.length > 0 ? 'PNS_TORNADO' : 'PNS' };
 }
 
 /**
@@ -240,7 +240,7 @@ function parseTorWarning(text) {
     });
   }
 
-  return { tornadoes, hasTornadoContent: true };
+  return { tornadoes, hasTornadoContent: true, subType: 'TOR' };
 }
 
 /**
@@ -282,7 +282,7 @@ function parseLSR(text) {
     }
   }
 
-  return { tornadoes, hasTornadoContent: tornadoes.length > 0 || hasTornadoKeywords(text) };
+  return { tornadoes, hasTornadoContent: tornadoes.length > 0 || hasTornadoKeywords(text), subType: 'LSR' };
 }
 
 /**

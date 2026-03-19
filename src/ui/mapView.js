@@ -6,6 +6,7 @@ let map = null;
 let markerLayer = null;
 let polygonLayer = null;
 let currentTileLayer = null;
+let highlightLayer = null;
 
 const MAP_TILES = {
   dark: {
@@ -41,9 +42,10 @@ export function initMap() {
   switchTileLayer('dark');
   addTileToggleControl();
 
-  // Layer groups for markers and polygons
+  // Layer groups for markers, polygons, and highlights
   markerLayer = L.layerGroup().addTo(map);
   polygonLayer = L.layerGroup().addTo(map);
+  highlightLayer = L.layerGroup().addTo(map);
 
   // React to marker data changes
   store.subscribe('tornadoMarkers', updateMarkers);
@@ -162,6 +164,50 @@ function updateMarkers() {
   if (bounds.length > 0) {
     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
   }
+}
+
+/**
+ * Zoom the map to a specific location or polygon.
+ * @param {{ lat?: number, lon?: number, polygon?: Array<{lat: number, lon: number}> }} opts
+ */
+export function zoomToLocation({ lat, lon, polygon } = {}) {
+  if (!map) return;
+  clearHighlight();
+
+  if (polygon && polygon.length >= 3) {
+    const latlngs = polygon.map(p => [p.lat, p.lon]);
+    const poly = L.polygon(latlngs, {
+      color: '#f59e0b',
+      weight: 3,
+      fillOpacity: 0.2
+    });
+    highlightLayer.addLayer(poly);
+    map.fitBounds(poly.getBounds(), { padding: [40, 40] });
+  } else if (lat && lon) {
+    map.setView([lat, lon], 10);
+    const marker = L.circleMarker([lat, lon], {
+      radius: 10,
+      color: '#f59e0b',
+      weight: 3,
+      fillOpacity: 0.3
+    });
+    highlightLayer.addLayer(marker);
+  }
+}
+
+/**
+ * Clear highlight layer.
+ */
+export function clearHighlight() {
+  if (highlightLayer) highlightLayer.clearLayers();
+}
+
+/**
+ * Tell Leaflet to recalculate its container size after a CSS layout change.
+ */
+export function invalidateMapSize() {
+  if (!map) return;
+  setTimeout(() => map.invalidateSize(), 50);
 }
 
 /**

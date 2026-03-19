@@ -31,6 +31,14 @@ export const MARKER_COLORS = {
   DEFAULT: '#6b7280'
 };
 
+/** Sub-type labels for product cards */
+export const PRODUCT_SUB_TYPES = {
+  TOR:         'Tornado Warning',
+  PNS_SURVEY:  'NWS Damage Survey',
+  PNS_TORNADO: 'Tornado Report',
+  LSR:         'Local Storm Report',
+};
+
 /** localStorage keys */
 export const STORAGE_KEYS = {
   SELECTED_PRODUCT_TYPES: 'tt_selectedProductTypes',

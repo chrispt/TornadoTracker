@@ -134,6 +134,16 @@
   padding: var(--space-md);
 }
 
+.main-panel--split .main-panel__map {
+  flex: 0 0 40%;
+  min-height: 200px;
+}
+
+.main-panel--split .main-panel__detail {
+  flex: 0 0 60%;
+  border-top: 1px solid var(--border-color);
+}
+
 /* Error banner */
 .error-banner {
   padding: var(--space-sm) var(--space-md);

@@ -70,6 +70,7 @@ async function refreshProducts() {
     // TOR/LSR are always tornado-relevant
     if (ALWAYS_TORNADO_TYPES.has(code)) {
       const cached = await fetchAndParseProduct(product);
+      product._subType = cached?.parsedData?.subType || null;
       collectMarkers(markers, product, cached);
       return product;
     }
@@ -78,6 +79,7 @@ async function refreshProducts() {
     if (NEEDS_CONTENT_CHECK_TYPES.has(code)) {
       const cached = await fetchAndParseProduct(product);
       if (cached?.parsedData?.hasTornadoContent) {
+        product._subType = cached?.parsedData?.subType || null;
         collectMarkers(markers, product, cached);
         return product;
       }
