@@ -1,6 +1,5 @@
 import store from '../state/store.js';
 import { renderProductCard } from './productCard.js';
-import { zoomToLocation, zoomToLocations } from './mapView.js';
 
 /**
  * Initialize the feed view — renders product cards and handles selection.
@@ -21,15 +20,6 @@ export function initFeedView() {
       const id = card.dataset.productId;
       store.set('selectedProductId', id);
       document.dispatchEvent(new CustomEvent('tt:product-selected', { detail: id }));
-
-      // Immediately zoom map to any existing markers for this product
-      const allMarkers = store.get('tornadoMarkers') || [];
-      const matching = allMarkers.filter(m => m.productId === id && m.lat && m.lon);
-      if (matching.length === 1) {
-        zoomToLocation({ lat: matching[0].lat, lon: matching[0].lon, polygon: matching[0].polygon });
-      } else if (matching.length > 1) {
-        zoomToLocations(matching);
-      }
     }
   });
 }

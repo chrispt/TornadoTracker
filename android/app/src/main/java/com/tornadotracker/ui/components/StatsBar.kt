@@ -19,16 +19,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tornadotracker.domain.model.Category
 import com.tornadotracker.domain.model.NwsProduct
-import com.tornadotracker.domain.model.TornadoMarker
 import com.tornadotracker.ui.theme.TextSecondary
 
 data class FeedStats(
     val total: Int = 0,
-    val categoryCounts: Map<Category, Int> = emptyMap(),
-    val markerCount: Int = 0
+    val categoryCounts: Map<Category, Int> = emptyMap()
 )
 
-fun computeStats(products: List<NwsProduct>, markers: List<TornadoMarker>): FeedStats {
+fun computeStats(products: List<NwsProduct>): FeedStats {
     val catCounts = mutableMapOf<Category, Int>()
     products.forEach { p ->
         val cat = p.category ?: return@forEach
@@ -36,8 +34,7 @@ fun computeStats(products: List<NwsProduct>, markers: List<TornadoMarker>): Feed
     }
     return FeedStats(
         total = products.size,
-        categoryCounts = catCounts,
-        markerCount = markers.size
+        categoryCounts = catCounts
     )
 }
 
@@ -63,10 +60,6 @@ fun StatsBar(stats: FeedStats, modifier: Modifier = Modifier) {
             if (count > 0) {
                 StatDot(color = cat.color, label = "$count")
             }
-        }
-
-        if (stats.markerCount > 0) {
-            Text(text = "${stats.markerCount} markers", fontSize = 11.sp, color = TextSecondary)
         }
     }
 }

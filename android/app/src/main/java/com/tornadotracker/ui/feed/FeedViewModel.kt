@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.tornadotracker.data.preferences.UserPreferences
 import com.tornadotracker.data.repository.NwsRepository
 import com.tornadotracker.domain.model.NwsProduct
-import com.tornadotracker.domain.model.TornadoMarker
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,7 +18,6 @@ import javax.inject.Inject
 
 data class FeedUiState(
     val products: List<NwsProduct> = emptyList(),
-    val markers: List<TornadoMarker> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -35,22 +34,41 @@ class FeedViewModel @Inject constructor(
     val selectedCategories: StateFlow<Set<String>> = preferences.selectedCategories
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferences.ALL_CATEGORIES)
 
+    /** All tornado products (unfiltered) for re-filtering on category change */
+    private val allTornadoProducts = mutableListOf<NwsProduct>()
+    private var backgroundJob: Job? = null
+
     init {
         refresh()
         startPolling()
     }
 
     fun refresh() {
+        backgroundJob?.cancel()
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            val categories = selectedCategories.value
-            val result = repository.fetchProducts(categories)
-            _uiState.value = FeedUiState(
-                products = result.products,
-                markers = result.markers,
-                isLoading = false,
-                error = result.errors.firstOrNull()
-            )
+            val result = repository.fetchProductsImmediate()
+
+            // Stage 1: Show TOR products immediately
+            allTornadoProducts.clear()
+            allTornadoProducts.addAll(result.torProducts)
+            applyFilterAndUpdateState(error = result.errors.firstOrNull())
+            _uiState.value = _uiState.value.copy(isLoading = false)
+
+            // Stage 2: Background fetch PNS/LSR details + back-fill TOR
+            backgroundJob = launch {
+                repository.fetchProductsBackground(result.allSummaries).collect { product ->
+                    val existing = allTornadoProducts.indexOfFirst { it.id == product.id }
+                    if (existing >= 0) {
+                        // Back-fill: update existing TOR product (e.g., upgrade to PDS)
+                        allTornadoProducts[existing] = product
+                    } else {
+                        allTornadoProducts.add(product)
+                    }
+                    allTornadoProducts.sortByDescending { it.issuanceTime }
+                    applyFilterAndUpdateState()
+                }
+            }
         }
     }
 
@@ -59,8 +77,17 @@ class FeedViewModel @Inject constructor(
             val current = selectedCategories.value.toMutableSet()
             if (key in current) current.remove(key) else current.add(key)
             preferences.setSelectedCategories(current)
-            refresh()
+            // Re-filter from cached products instead of re-fetching
+            applyFilterAndUpdateState()
         }
+    }
+
+    private fun applyFilterAndUpdateState(error: String? = _uiState.value.error) {
+        val categories = selectedCategories.value
+        val filtered = allTornadoProducts.filter { p ->
+            p.category != null && p.category.key in categories
+        }
+        _uiState.value = _uiState.value.copy(products = filtered, error = error)
     }
 
     private fun startPolling() {

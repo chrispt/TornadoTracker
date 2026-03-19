@@ -32,7 +32,7 @@ fun FeedScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val selectedCategories by viewModel.selectedCategories.collectAsState()
-    val stats = computeStats(state.products, state.markers)
+    val stats = computeStats(state.products)
 
     PullToRefreshBox(
         isRefreshing = state.isLoading,

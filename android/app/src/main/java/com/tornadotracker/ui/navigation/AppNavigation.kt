@@ -12,11 +12,9 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -25,7 +23,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.tornadotracker.ui.detail.DetailScreen
 import com.tornadotracker.ui.feed.FeedScreen
-import com.tornadotracker.ui.feed.FeedViewModel
 import com.tornadotracker.ui.map.MapScreen
 import com.tornadotracker.ui.search.SearchScreen
 import kotlinx.serialization.Serializable
@@ -45,9 +42,6 @@ data class BottomNavItem(
 fun AppNavigation() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-
-    val feedViewModel: FeedViewModel = hiltViewModel()
-    val feedState by feedViewModel.uiState.collectAsState()
 
     val bottomItems = listOf(
         BottomNavItem("Feed", Icons.AutoMirrored.Filled.List, FeedRoute),
@@ -103,7 +97,7 @@ fun AppNavigation() {
             }
             composable<MapRoute> {
                 MapScreen(
-                    markers = feedState.markers,
+                    markers = emptyList(),
                     onMarkerClick = { id -> navController.navigate(DetailRoute(id)) }
                 )
             }

@@ -19,6 +19,8 @@ import { initMap } from './ui/mapView.js';
 
 let pollTimer = null;
 let currentOffice = '';
+let fetchGeneration = 0;
+let allTornadoProducts = [];
 
 // ── Bootstrap ─────────────────────────────────
 
@@ -50,11 +52,14 @@ const NEEDS_CONTENT_CHECK_TYPES = new Set(['PNS', 'LSR']);
 const ALL_NWS_TYPES = Object.keys(PRODUCT_TYPES);
 
 async function refreshProducts() {
+  const generation = ++fetchGeneration;
   store.set('isLoading', true);
   store.set('error', null);
 
   // Always fetch all 3 NWS types regardless of category filter
   const { products, errors } = await fetchMultipleProductTypes(ALL_NWS_TYPES, currentOffice);
+
+  if (fetchGeneration !== generation) return; // stale
 
   if (errors.length > 0) {
     const msg = errors.map(e => `${e.type}: ${e.error.message}`).join('; ');
@@ -62,58 +67,93 @@ async function refreshProducts() {
     console.warn('Fetch errors:', msg);
   }
 
-  // Filter to tornado-only, assign category, and build markers
-  const allTornado = [];
-  const markers = [];
+  // Stage 1: TOR products go into the feed immediately (no detail fetch needed)
+  const torProducts = [];
+  const needsDetailCheck = [];
 
-  const filterPromises = products.map(async (product) => {
+  products.forEach(product => {
     const code = product.productCode;
-
-    // TOR products are always tornado-relevant
     if (ALWAYS_TORNADO_TYPES.has(code)) {
-      const cached = await fetchAndParseProduct(product);
-      product._subType = cached?.parsedData?.subType || null;
-      product._isPDS = cached?.parsedData?.isPDS || false;
-      product._category = SUB_TYPE_TO_CATEGORY[product._subType] || SUB_TYPE_TO_CATEGORY[code] || null;
-      collectMarkers(markers, product, cached);
-      return product;
-    }
-
-    // PNS/LSR need a content check
-    if (NEEDS_CONTENT_CHECK_TYPES.has(code)) {
-      const cached = await fetchAndParseProduct(product);
-      if (cached?.parsedData?.hasTornadoContent) {
-        product._subType = cached?.parsedData?.subType || null;
-        product._isPDS = cached?.parsedData?.isPDS || false;
-        product._category = SUB_TYPE_TO_CATEGORY[product._subType] || SUB_TYPE_TO_CATEGORY[code] || null;
-        collectMarkers(markers, product, cached);
-        return product;
-      }
-      return null; // Not tornado-relevant
-    }
-
-    return product;
-  });
-
-  const results = await Promise.allSettled(filterPromises);
-  results.forEach(r => {
-    if (r.status === 'fulfilled' && r.value) {
-      allTornado.push(r.value);
+      // Assign default category — will be upgraded to PDS in background if applicable
+      product._subType = code;
+      product._isPDS = false;
+      product._category = SUB_TYPE_TO_CATEGORY[code] || null;
+      torProducts.push(product);
+    } else if (NEEDS_CONTENT_CHECK_TYPES.has(code)) {
+      needsDetailCheck.push(product);
     }
   });
 
-  // Re-sort since Promise.allSettled may resolve out of order
-  allTornado.sort((a, b) => new Date(b.issuanceTime) - new Date(a.issuanceTime));
-
-  // Client-side filter by selected categories
-  const selectedCats = store.get('selectedCategories');
-  const filtered = allTornado.filter(p => p._category && selectedCats.includes(p._category));
-  const filteredMarkers = markers.filter(m => selectedCats.includes(m.category));
-
-  store.set('products', filtered);
-  store.set('tornadoMarkers', filteredMarkers);
+  // Show TOR products in feed immediately, map starts empty
+  allTornadoProducts = [...torProducts];
+  applyFilterAndUpdateStore();
+  store.set('selectedProductMarkers', []);
   store.set('lastFetchTime', new Date().toISOString());
   store.set('isLoading', false);
+
+  // Stage 2: Fetch PNS/LSR details in background batches, plus back-fill TOR details
+  const allToProcess = [...needsDetailCheck, ...torProducts];
+  fetchDetailsInBackground(allToProcess, generation);
+}
+
+/**
+ * Process products in batches, appending confirmed tornado products to the feed.
+ * Also back-fills TOR detail (upgrades _category to PDS if applicable).
+ */
+async function fetchDetailsInBackground(products, generation) {
+  const BATCH_SIZE = 10;
+  for (let i = 0; i < products.length; i += BATCH_SIZE) {
+    if (fetchGeneration !== generation) return; // stale
+
+    const batch = products.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map(p => fetchAndParseProduct(p).then(cached => ({ product: p, cached })))
+    );
+
+    if (fetchGeneration !== generation) return; // stale
+
+    let changed = false;
+    results.forEach(r => {
+      if (r.status !== 'fulfilled' || !r.value) return;
+      const { product, cached } = r.value;
+      const code = product.productCode;
+
+      if (ALWAYS_TORNADO_TYPES.has(code)) {
+        // Back-fill: upgrade category if PDS
+        if (cached?.parsedData) {
+          product._subType = cached.parsedData.subType || product._subType;
+          product._isPDS = cached.parsedData.isPDS || false;
+          product._category = SUB_TYPE_TO_CATEGORY[product._subType] || SUB_TYPE_TO_CATEGORY[code] || null;
+          changed = true;
+        }
+      } else if (NEEDS_CONTENT_CHECK_TYPES.has(code)) {
+        if (cached?.parsedData?.hasTornadoContent) {
+          product._subType = cached.parsedData.subType || null;
+          product._isPDS = cached.parsedData.isPDS || false;
+          product._category = SUB_TYPE_TO_CATEGORY[product._subType] || SUB_TYPE_TO_CATEGORY[code] || null;
+          // Add to the master list if not already present
+          if (!allTornadoProducts.some(p => p.id === product.id)) {
+            allTornadoProducts.push(product);
+            changed = true;
+          }
+        }
+      }
+    });
+
+    if (changed && fetchGeneration === generation) {
+      allTornadoProducts.sort((a, b) => new Date(b.issuanceTime) - new Date(a.issuanceTime));
+      applyFilterAndUpdateStore();
+    }
+  }
+}
+
+/**
+ * Apply category filter to allTornadoProducts and update the store.
+ */
+function applyFilterAndUpdateStore() {
+  const selectedCats = store.get('selectedCategories');
+  const filtered = allTornadoProducts.filter(p => p._category && selectedCats.includes(p._category));
+  store.set('products', filtered);
 }
 
 /**
@@ -167,6 +207,9 @@ function collectMarkers(markers, product, cached) {
 // ── Product Detail Loading ────────────────────
 
 async function loadProductDetail(id) {
+  // Find the product in our list so we can build markers with its category
+  const product = allTornadoProducts.find(p => p.id === id);
+
   // Check cache
   let cached = productCache.get(id);
   if (cached) {
@@ -174,6 +217,10 @@ async function loadProductDetail(id) {
       selectedProductDetail: cached.detail,
       parsedTornadoData: cached.parsedData
     });
+    // Build markers for this product and show on map
+    const markers = [];
+    if (product) collectMarkers(markers, product, cached);
+    store.set('selectedProductMarkers', markers);
     return;
   }
 
@@ -193,6 +240,11 @@ async function loadProductDetail(id) {
     selectedProductDetail: data,
     parsedTornadoData: parsed
   });
+
+  // Build markers for this product and show on map
+  const markers = [];
+  if (product) collectMarkers(markers, product, { detail: data, parsedData: parsed });
+  store.set('selectedProductMarkers', markers);
 }
 
 // ── Polling ───────────────────────────────────
@@ -244,8 +296,8 @@ function setupEventListeners() {
   });
 
   document.addEventListener('tt:categories-changed', () => {
-    refreshProducts();
-    startPolling(); // Reset polling timer
+    // Re-filter from cached products instead of re-fetching
+    applyFilterAndUpdateStore();
   });
 
   document.addEventListener('tt:office-changed', (e) => {

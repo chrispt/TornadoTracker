@@ -47,8 +47,8 @@ export function initMap() {
   polygonLayer = L.layerGroup().addTo(map);
   highlightLayer = L.layerGroup().addTo(map);
 
-  // React to marker data changes
-  store.subscribe('tornadoMarkers', updateMarkers);
+  // React to selected product marker changes
+  store.subscribe('selectedProductMarkers', updateMarkers);
 
   // Popup click delegation for "View Details" links
   map.on('popupopen', (e) => {
@@ -118,7 +118,7 @@ function updateMarkers() {
   markerLayer.clearLayers();
   polygonLayer.clearLayers();
 
-  const markers = store.get('tornadoMarkers') || [];
+  const markers = store.get('selectedProductMarkers') || [];
   if (markers.length === 0) return;
 
   const bounds = [];

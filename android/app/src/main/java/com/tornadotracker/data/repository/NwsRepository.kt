@@ -9,9 +9,12 @@ import com.tornadotracker.domain.model.NwsProduct
 import com.tornadotracker.domain.model.ParseResult
 import com.tornadotracker.domain.model.TornadoMarker
 import com.tornadotracker.domain.parser.NwsTextParser
+import com.tornadotracker.domain.model.LatLon
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,18 +33,26 @@ class NwsRepository @Inject constructor(
 
     data class FetchResult(
         val products: List<NwsProduct>,
-        val markers: List<TornadoMarker>,
         val errors: List<String>
     )
 
-    suspend fun fetchProducts(
-        selectedCategories: Set<String>,
+    /**
+     * Stage 1: Fetch product lists and return TOR products immediately.
+     * TOR products get a default WARNING category (upgraded to PDS in background).
+     * Also returns the summaries that need detail checks (PNS/LSR) + TOR for back-fill.
+     */
+    data class ImmediateResult(
+        val torProducts: List<NwsProduct>,
+        val allSummaries: List<ProductSummary>,
+        val errors: List<String>
+    )
+
+    suspend fun fetchProductsImmediate(
         office: String? = null
-    ): FetchResult = coroutineScope {
+    ): ImmediateResult = coroutineScope {
         val errors = mutableListOf<String>()
         val allSummaries = mutableListOf<ProductSummary>()
 
-        // Always fetch all 3 NWS types
         val fetches = ALL_NWS_TYPES.map { type ->
             async {
                 try {
@@ -55,61 +66,82 @@ class NwsRepository @Inject constructor(
         }
 
         fetches.awaitAll().forEach { allSummaries.addAll(it) }
-
-        // Sort by issuance time descending
         allSummaries.sortByDescending { it.issuanceTime }
 
-        // Filter to tornado-relevant and build markers
-        val allProducts = mutableListOf<NwsProduct>()
-        val allMarkers = mutableListOf<TornadoMarker>()
+        // TOR products go into the feed immediately with default category
+        val torProducts = allSummaries
+            .filter { it.productCode in ALWAYS_TORNADO_TYPES }
+            .map { summary ->
+                val code = summary.productCode ?: "TOR"
+                summary.toDomain(code, isPDS = false, Category.fromSubType(code))
+            }
 
-        val filterJobs = allSummaries.map { summary ->
-            async {
-                try {
-                    val code = summary.productCode ?: return@async null
+        ImmediateResult(torProducts, allSummaries, errors)
+    }
 
-                    if (code in ALWAYS_TORNADO_TYPES) {
-                        val (detail, parsed) = fetchAndParse(summary)
-                        val category = Category.fromSubType(parsed?.subType ?: code)
-                        val product = summary.toDomain(parsed?.subType, parsed?.isPDS ?: false, category)
-                        val productMarkers = collectMarkers(summary, parsed, category)
-                        Triple(product, productMarkers, true)
-                    } else if (code in NEEDS_CONTENT_CHECK) {
-                        val (detail, parsed) = fetchAndParse(summary)
-                        if (parsed?.hasTornadoContent == true) {
-                            val category = Category.fromSubType(parsed.subType ?: code)
-                            val product = summary.toDomain(parsed.subType, parsed.isPDS, category)
-                            val productMarkers = collectMarkers(summary, parsed, category)
-                            Triple(product, productMarkers, true)
-                        } else {
+    /**
+     * Stage 2: Process summaries in background batches, emitting confirmed tornado products.
+     * Back-fills TOR details (upgrades to PDS if applicable) and checks PNS/LSR for tornado content.
+     */
+    fun fetchProductsBackground(
+        summaries: List<ProductSummary>
+    ): Flow<NwsProduct> = flow {
+        val batchSize = 10
+        for (i in summaries.indices step batchSize) {
+            val batch = summaries.subList(i, minOf(i + batchSize, summaries.size))
+            // Process batch in parallel, collect results, then emit
+            val batchResults = coroutineScope {
+                batch.map { summary ->
+                    async {
+                        try {
+                            val code = summary.productCode ?: return@async null
+                            val (_, parsed) = fetchAndParse(summary)
+
+                            if (code in ALWAYS_TORNADO_TYPES) {
+                                val category = Category.fromSubType(parsed?.subType ?: code)
+                                summary.toDomain(parsed?.subType, parsed?.isPDS ?: false, category)
+                            } else if (code in NEEDS_CONTENT_CHECK && parsed?.hasTornadoContent == true) {
+                                val category = Category.fromSubType(parsed.subType ?: code)
+                                summary.toDomain(parsed.subType, parsed.isPDS, category)
+                            } else {
+                                null
+                            }
+                        } catch (e: Exception) {
                             null
                         }
-                    } else {
-                        null
                     }
-                } catch (e: Exception) {
-                    null
-                }
+                }.awaitAll().filterNotNull()
             }
+            batchResults.forEach { product -> emit(product) }
         }
+    }
 
-        filterJobs.awaitAll().filterNotNull().forEach { (product, productMarkers, _) ->
-            allProducts.add(product)
-            allMarkers.addAll(productMarkers)
+    /**
+     * Build markers for a single product from cache.
+     */
+    fun getProductMarkers(id: String): List<TornadoMarker> {
+        val cached = cache.get(id) ?: return emptyList()
+        val parsed = cached.parsedData ?: return emptyList()
+        if (parsed.tornadoes == null) return emptyList()
+
+        val category = Category.fromSubType(parsed.subType ?: "")
+        return parsed.tornadoes.filter { it.lat != null && it.lon != null }.map { t ->
+            TornadoMarker(
+                lat = t.lat!!,
+                lon = t.lon!!,
+                efRating = t.efRating,
+                productId = id,
+                label = "",
+                county = t.county,
+                pathLength = t.pathLength,
+                type = "",
+                category = category,
+                polygon = t.polygon,
+                pathLine = if (t.startLat != null && t.endLat != null) {
+                    listOf(LatLon(t.startLat, t.startLon!!), LatLon(t.endLat, t.endLon!!))
+                } else null
+            )
         }
-
-        // Re-sort
-        allProducts.sortByDescending { it.issuanceTime }
-
-        // Client-side filter by selected categories
-        val filteredProducts = allProducts.filter { p ->
-            p.category != null && p.category.key in selectedCategories
-        }
-        val filteredMarkers = allMarkers.filter { m ->
-            m.category != null && m.category.key in selectedCategories
-        }
-
-        FetchResult(filteredProducts, filteredMarkers, errors)
     }
 
     suspend fun fetchProductDetail(id: String): Pair<ProductDetailResponse?, ParseResult?> {
@@ -128,31 +160,6 @@ class NwsRepository @Inject constructor(
 
     private suspend fun fetchAndParse(summary: ProductSummary): Pair<ProductDetailResponse?, ParseResult?> {
         return fetchProductDetail(summary.id)
-    }
-
-    private fun collectMarkers(
-        summary: ProductSummary,
-        parsed: ParseResult?,
-        category: Category?
-    ): List<TornadoMarker> {
-        if (parsed?.tornadoes == null) return emptyList()
-        return parsed.tornadoes.filter { it.lat != null && it.lon != null }.map { t ->
-            TornadoMarker(
-                lat = t.lat!!,
-                lon = t.lon!!,
-                efRating = t.efRating,
-                productId = summary.id,
-                label = summary.productName ?: "",
-                county = t.county,
-                pathLength = t.pathLength,
-                type = summary.productCode ?: "",
-                category = category,
-                polygon = t.polygon,
-                pathLine = if (t.startLat != null && t.endLat != null) {
-                    listOf(LatLon(t.startLat, t.startLon!!), LatLon(t.endLat, t.endLon!!))
-                } else null
-            )
-        }
     }
 
     private fun ProductSummary.toDomain(subType: String?, isPDS: Boolean, category: Category?): NwsProduct {
