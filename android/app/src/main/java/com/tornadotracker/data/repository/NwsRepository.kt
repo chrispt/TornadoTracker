@@ -147,7 +147,10 @@ class NwsRepository @Inject constructor(
                 pathLength = t.pathLength,
                 type = summary.productCode ?: "",
                 category = category,
-                polygon = t.polygon
+                polygon = t.polygon,
+                pathLine = if (t.startLat != null && t.endLat != null) {
+                    listOf(LatLon(t.startLat, t.startLon!!), LatLon(t.endLat, t.endLon!!))
+                } else null
             )
         }
     }

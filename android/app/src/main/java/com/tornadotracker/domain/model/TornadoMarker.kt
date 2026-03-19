@@ -10,5 +10,6 @@ data class TornadoMarker(
     val pathLength: String? = null,
     val type: String,
     val category: Category? = null,
-    val polygon: List<LatLon>? = null
+    val polygon: List<LatLon>? = null,
+    val pathLine: List<LatLon>? = null
 )

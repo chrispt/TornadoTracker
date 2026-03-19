@@ -35,10 +35,8 @@ class NwsTextParser @Inject constructor() {
             return ParseResult()
         }
 
-        // NWS Damage Survey — always tornado-relevant
-        if (upperText.contains("NWS DAMAGE SURVEY")) {
-            return ParseResult(hasTornadoContent = true, subType = "PNS_SURVEY", isPDS = isPDS)
-        }
+        // NWS Damage Survey — flag, don't return early
+        val isSurvey = upperText.contains("NWS DAMAGE SURVEY")
 
         // Look for ...TORNADO... sections
         val tornadoRegex = Regex(
@@ -50,8 +48,8 @@ class NwsTextParser @Inject constructor() {
             parseTornadoSection(match.groupValues[1])
         }.toList()
 
-        val hasTornadoContent = tornadoes.isNotEmpty() || hasTornadoKeywords(upperText)
-        val subType = if (tornadoes.isNotEmpty()) "PNS_TORNADO" else "PNS"
+        val hasTornadoContent = tornadoes.isNotEmpty() || isSurvey || hasTornadoKeywords(upperText)
+        val subType = if (isSurvey) "PNS_SURVEY" else if (tornadoes.isNotEmpty()) "PNS_TORNADO" else "PNS"
 
         return ParseResult(tornadoes, hasTornadoContent, subType, isPDS)
     }
@@ -148,17 +146,40 @@ class NwsTextParser @Inject constructor() {
         val widthMatch = Regex("""PATH\s*WIDTH\s*(?::|\.{3})?\s*([\d.]+)\s*(YARDS?|YDS?|FEET|FT|METERS?|M)\b""", RegexOption.IGNORE_CASE).find(section)
         val pathWidth = widthMatch?.let { "${it.groupValues[1]} ${it.groupValues[2].lowercase()}" }
 
-        // NWS compressed coordinates
-        var lat: Double? = null
-        var lon: Double? = null
-        val coordMatch = Regex("""(\d{4})\s+(\d{4,5})(?:\s|$)""").find(section)
-        if (coordMatch != null) {
-            val coords = parseNWSCoords(coordMatch.groupValues[1], coordMatch.groupValues[2])
-            if (coords != null) {
-                lat = coords.lat
-                lon = coords.lon
+        // Coordinates — try labeled START/END first, then positional pairs
+        var startLat: Double? = null
+        var startLon: Double? = null
+        var endLat: Double? = null
+        var endLon: Double? = null
+
+        val startMatch = Regex("""START\s*LAT/?LON[:\s]+(\d{4})\s+(\d{4,5})""", RegexOption.IGNORE_CASE).find(section)
+        val endCoordMatch = Regex("""END\s*LAT/?LON[:\s]+(\d{4})\s+(\d{4,5})""", RegexOption.IGNORE_CASE).find(section)
+
+        if (startMatch != null) {
+            val sc = parseNWSCoords(startMatch.groupValues[1], startMatch.groupValues[2])
+            if (sc != null) { startLat = sc.lat; startLon = sc.lon }
+        }
+        if (endCoordMatch != null) {
+            val ec = parseNWSCoords(endCoordMatch.groupValues[1], endCoordMatch.groupValues[2])
+            if (ec != null) { endLat = ec.lat; endLon = ec.lon }
+        }
+
+        // Fallback: find all compressed coord pairs positionally
+        if (startLat == null) {
+            val allCoords = Regex("""(\d{4})\s+(\d{4,5})(?:\s|$)""").findAll(section)
+                .mapNotNull { parseNWSCoords(it.groupValues[1], it.groupValues[2]) }
+                .toList()
+            if (allCoords.size >= 2) {
+                startLat = allCoords[0].lat; startLon = allCoords[0].lon
+                endLat = allCoords[1].lat; endLon = allCoords[1].lon
+            } else if (allCoords.size == 1) {
+                startLat = allCoords[0].lat; startLon = allCoords[0].lon
             }
         }
+
+        // Use start as primary location for backward compat
+        var lat: Double? = startLat
+        var lon: Double? = startLon
 
         // Decimal degree fallback
         if (lat == null) {
@@ -207,6 +228,10 @@ class NwsTextParser @Inject constructor() {
             pathWidth = pathWidth,
             lat = lat,
             lon = lon,
+            startLat = startLat,
+            startLon = startLon,
+            endLat = endLat,
+            endLon = endLon,
             county = county,
             state = state,
             fatalities = fatalities,

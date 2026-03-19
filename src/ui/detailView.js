@@ -92,7 +92,12 @@ function renderDetail() {
   if (parsed?.tornadoes?.length > 0) {
     const withCoords = parsed.tornadoes.filter(t => t.lat && t.lon);
     if (withCoords.length === 1) {
-      zoomToLocation({ lat: withCoords[0].lat, lon: withCoords[0].lon, polygon: withCoords[0].polygon });
+      const t = withCoords[0];
+      const pathLine = (t.startLat && t.endLat) ? [
+        { lat: t.startLat, lon: t.startLon },
+        { lat: t.endLat, lon: t.endLon }
+      ] : null;
+      zoomToLocation({ lat: t.lat, lon: t.lon, polygon: t.polygon, pathLine });
     } else if (withCoords.length > 1) {
       zoomToLocations(withCoords);
     }
@@ -112,7 +117,11 @@ function renderTornadoHighlight(tornado, index) {
     { label: 'State', value: tornado.state },
     { label: 'Fatalities', value: tornado.fatalities !== null ? String(tornado.fatalities) : null },
     { label: 'Injuries', value: tornado.injuries !== null ? String(tornado.injuries) : null },
-    { label: 'Location', value: tornado.lat ? `${tornado.lat.toFixed(2)}, ${tornado.lon.toFixed(2)}` : null }
+    { label: 'Location', value: tornado.lat ? (
+      tornado.startLat && tornado.endLat
+        ? `${tornado.startLat.toFixed(2)}, ${tornado.startLon.toFixed(2)} → ${tornado.endLat.toFixed(2)}, ${tornado.endLon.toFixed(2)}`
+        : `${tornado.lat.toFixed(2)}, ${tornado.lon.toFixed(2)}`
+    ) : null }
   ].filter(f => f.value);
 
   return `

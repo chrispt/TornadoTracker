@@ -19,8 +19,10 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
+import android.graphics.DashPathEffect
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polygon
+import org.osmdroid.views.overlay.Polyline
 
 @Composable
 fun MapScreen(
@@ -70,6 +72,20 @@ fun MapScreen(
                         outlinePaint.strokeWidth = 2f
                     }
                     map.overlays.add(polygon)
+                }
+
+                // Draw damage survey path line
+                if (marker.pathLine != null && marker.pathLine.size == 2) {
+                    val polyline = Polyline().apply {
+                        val linePoints = marker.pathLine.map { GeoPoint(it.lat, it.lon) }
+                        setPoints(linePoints)
+                        val catColor = marker.category?.let { categoryColor(it) } ?: 0xFF6B7280.toInt()
+                        outlinePaint.color = catColor
+                        outlinePaint.strokeWidth = 4f
+                        outlinePaint.pathEffect = DashPathEffect(floatArrayOf(16f, 8f), 0f)
+                    }
+                    map.overlays.add(polyline)
+                    geoPoints.add(GeoPoint(marker.pathLine[1].lat, marker.pathLine[1].lon))
                 }
 
                 // Create marker

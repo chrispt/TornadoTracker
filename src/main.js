@@ -154,7 +154,11 @@ function collectMarkers(markers, product, cached) {
         pathLength: t.pathLength,
         type: product.productCode,
         category: product._category,
-        polygon: t.polygon || null
+        polygon: t.polygon || null,
+        pathLine: (t.startLat && t.endLat) ? [
+          { lat: t.startLat, lon: t.startLon },
+          { lat: t.endLat, lon: t.endLon }
+        ] : null
       });
     }
   });

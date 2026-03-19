@@ -174,6 +174,17 @@ function updateMarkers() {
       });
       polygonLayer.addLayer(poly);
     }
+
+    // Draw damage survey path line
+    if (m.pathLine && m.pathLine.length === 2) {
+      const latlngs = m.pathLine.map(p => [p.lat, p.lon]);
+      const lineColor = MARKER_COLORS[m.category] || MARKER_COLORS.DEFAULT;
+      const polyline = L.polyline(latlngs, {
+        color: lineColor, weight: 3, opacity: 0.8, dashArray: '8, 4'
+      });
+      polygonLayer.addLayer(polyline);
+      bounds.push([m.pathLine[1].lat, m.pathLine[1].lon]);
+    }
   });
 
   // Auto-fit map to markers
@@ -183,10 +194,10 @@ function updateMarkers() {
 }
 
 /**
- * Zoom the map to a specific location or polygon.
- * @param {{ lat?: number, lon?: number, polygon?: Array<{lat: number, lon: number}> }} opts
+ * Zoom the map to a specific location, polygon, or path line.
+ * @param {{ lat?: number, lon?: number, polygon?: Array, pathLine?: Array }} opts
  */
-export function zoomToLocation({ lat, lon, polygon } = {}) {
+export function zoomToLocation({ lat, lon, polygon, pathLine } = {}) {
   if (!map) return;
   clearHighlight();
 
@@ -199,6 +210,13 @@ export function zoomToLocation({ lat, lon, polygon } = {}) {
     });
     highlightLayer.addLayer(poly);
     map.fitBounds(poly.getBounds(), { padding: [40, 40] });
+  } else if (pathLine && pathLine.length === 2) {
+    const latlngs = pathLine.map(p => [p.lat, p.lon]);
+    const line = L.polyline(latlngs, {
+      color: '#f59e0b', weight: 4, opacity: 0.9, dashArray: '8, 4'
+    });
+    highlightLayer.addLayer(line);
+    map.fitBounds(line.getBounds(), { padding: [40, 40], maxZoom: 12 });
   } else if (lat && lon) {
     map.setView([lat, lon], 10);
     const marker = L.circleMarker([lat, lon], {
@@ -231,7 +249,14 @@ export function zoomToLocations(tornadoes) {
       });
       highlightLayer.addLayer(poly);
       bounds.push(...latlngs);
-    } else {
+    } else if (t.startLat && t.endLat) {
+      const latlngs = [[t.startLat, t.startLon], [t.endLat, t.endLon]];
+      const line = L.polyline(latlngs, {
+        color: '#f59e0b', weight: 4, opacity: 0.9, dashArray: '8, 4'
+      });
+      highlightLayer.addLayer(line);
+      bounds.push(...latlngs);
+    } else if (t.lat && t.lon) {
       const marker = L.circleMarker([t.lat, t.lon], {
         radius: 10,
         color: '#f59e0b',

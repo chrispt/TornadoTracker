@@ -37,10 +37,8 @@ export function parseProductText(text, productType = 'PNS') {
     return { tornadoes: [], hasTornadoContent: false, subType: null, isPDS: false };
   }
 
-  // NWS Damage Survey PNS bulletins are actual tornado surveys — always keep
-  if (/NWS DAMAGE SURVEY/i.test(upperText)) {
-    return { tornadoes: [], hasTornadoContent: true, subType: 'PNS_SURVEY', isPDS };
-  }
+  // NWS Damage Survey PNS bulletins are actual tornado surveys — flag, don't return
+  const isSurvey = /NWS DAMAGE SURVEY/i.test(upperText);
 
   // PNS / SVS — look for ...TORNADO... sections
   const tornadoes = [];
@@ -54,9 +52,10 @@ export function parseProductText(text, productType = 'PNS') {
   }
 
   // Fallback: keyword scan if no explicit tornado sections
-  const hasTornadoContent = tornadoes.length > 0 || hasTornadoKeywords(upperText);
+  const hasTornadoContent = tornadoes.length > 0 || isSurvey || hasTornadoKeywords(upperText);
+  const subType = isSurvey ? 'PNS_SURVEY' : (tornadoes.length > 0 ? 'PNS_TORNADO' : 'PNS');
 
-  return { tornadoes, hasTornadoContent, subType: tornadoes.length > 0 ? 'PNS_TORNADO' : 'PNS', isPDS };
+  return { tornadoes, hasTornadoContent, subType, isPDS };
 }
 
 /**
@@ -86,6 +85,10 @@ export function parseTornadoSection(section) {
     pathWidth: null,
     lat: null,
     lon: null,
+    startLat: null,
+    startLon: null,
+    endLat: null,
+    endLon: null,
     county: null,
     state: null,
     fatalities: null,
@@ -119,23 +122,43 @@ export function parseTornadoSection(section) {
     data.pathWidth = `${widthMatch[1]} ${widthMatch[2].toLowerCase()}`;
   }
 
-  // Coordinates — NWS compressed format: 3456 8912 → 34.56, -89.12
-  const coordMatch = section.match(/(\d{4})\s+(\d{4,5})(?:\s|$)/);
-  if (coordMatch) {
-    const coords = parseNWSCoords(coordMatch[1], coordMatch[2]);
-    if (coords) {
-      data.lat = coords.lat;
-      data.lon = coords.lon;
+  // Coordinates — try labeled START/END first, then positional pairs
+  const startMatch = section.match(/START\s*LAT\/?LON[:\s]+(\d{4})\s+(\d{4,5})/i);
+  const endMatch = section.match(/END\s*LAT\/?LON[:\s]+(\d{4})\s+(\d{4,5})/i);
+
+  if (startMatch) {
+    const sc = parseNWSCoords(startMatch[1], startMatch[2]);
+    if (sc) { data.startLat = sc.lat; data.startLon = sc.lon; }
+  }
+  if (endMatch) {
+    const ec = parseNWSCoords(endMatch[1], endMatch[2]);
+    if (ec) { data.endLat = ec.lat; data.endLon = ec.lon; }
+  }
+
+  // Fallback: find all compressed coord pairs positionally
+  if (!data.startLat) {
+    const allCoords = [...section.matchAll(/(\d{4})\s+(\d{4,5})(?:\s|$)/g)];
+    const parsed = allCoords.map(m => parseNWSCoords(m[1], m[2])).filter(Boolean);
+    if (parsed.length >= 2) {
+      data.startLat = parsed[0].lat; data.startLon = parsed[0].lon;
+      data.endLat = parsed[1].lat; data.endLon = parsed[1].lon;
+    } else if (parsed.length === 1) {
+      data.startLat = parsed[0].lat; data.startLon = parsed[0].lon;
     }
   }
 
-  // Also try decimal degree coordinates
+  // Use start as primary location for backward compat
+  if (data.startLat) {
+    data.lat = data.startLat;
+    data.lon = data.startLon;
+  }
+
+  // Decimal degree fallback
   if (!data.lat) {
     const decMatch = section.match(/([-]?\d{2,3}\.\d+)\s*[,/]\s*([-]?\d{2,3}\.\d+)/);
     if (decMatch) {
       const v1 = parseFloat(decMatch[1]);
       const v2 = parseFloat(decMatch[2]);
-      // NWS often puts lat first
       if (v1 >= 20 && v1 <= 55 && (v2 <= -60 || v2 >= 60)) {
         data.lat = v1;
         data.lon = v2 < 0 ? v2 : -v2;
