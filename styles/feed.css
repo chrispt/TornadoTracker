@@ -140,3 +140,20 @@
   justify-content: center;
   padding: var(--space-lg);
 }
+
+/* Mobile feed overrides */
+@media (max-width: 768px) {
+  .product-card {
+    margin: 0 var(--space-xs);
+    padding: var(--space-sm);
+    min-height: 44px;
+  }
+
+  .product-card:hover {
+    transform: none;
+  }
+
+  .product-card__preview {
+    -webkit-line-clamp: 1;
+  }
+}

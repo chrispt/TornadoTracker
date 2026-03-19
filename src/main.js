@@ -265,7 +265,33 @@ function setupEventListeners() {
 
   document.addEventListener('tt:product-selected', (e) => {
     loadProductDetail(e.detail);
+    showDetailOnMobile();
   });
+
+  // Toggle mobile panels when selectedProductDetail changes (e.g. Back button clears it)
+  store.subscribe('selectedProductDetail', () => {
+    if (!store.get('selectedProductDetail')) {
+      showFeedOnMobile();
+    }
+  });
+}
+
+// ── Mobile Panel Toggling ──────────────────────
+
+function showDetailOnMobile() {
+  const sidebar = document.getElementById('sidebar');
+  const mainPanel = document.getElementById('main-panel');
+  if (!sidebar || !mainPanel) return;
+  sidebar.classList.add('sidebar--hidden');
+  mainPanel.classList.add('main-panel--visible');
+}
+
+function showFeedOnMobile() {
+  const sidebar = document.getElementById('sidebar');
+  const mainPanel = document.getElementById('main-panel');
+  if (!sidebar || !mainPanel) return;
+  sidebar.classList.remove('sidebar--hidden');
+  mainPanel.classList.remove('main-panel--visible');
 }
 
 // ── Go ────────────────────────────────────────

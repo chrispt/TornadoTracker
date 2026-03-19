@@ -227,4 +227,61 @@
   .sidebar--hidden {
     display: none;
   }
+
+  /* Header: stack controls below title */
+  .app-header {
+    flex-wrap: wrap;
+    padding: var(--space-xs) var(--space-sm);
+    gap: var(--space-xs);
+  }
+
+  .app-header__title {
+    font-size: var(--text-lg);
+  }
+
+  .app-header__controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .app-header__filters {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .app-header__filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    gap: var(--space-sm);
+    padding: var(--space-xs) var(--space-sm);
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .stats-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Sidebar: full width, no border */
+  .sidebar {
+    border-right: none;
+  }
+
+  /* Touch-friendly tab targets */
+  .sidebar__tab {
+    padding: var(--space-sm) var(--space-md);
+    min-height: 44px;
+  }
+
+  /* Detail panel: tighter padding */
+  .main-panel__detail {
+    padding: var(--space-sm);
+  }
 }
