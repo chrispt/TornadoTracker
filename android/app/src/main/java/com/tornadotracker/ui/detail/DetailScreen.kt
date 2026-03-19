@@ -11,6 +11,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -69,11 +73,24 @@ fun DetailScreen(
         }
 
         if (state.error != null) {
-            Text(
-                text = state.error!!,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(padding).padding(16.dp)
-            )
+            Card(
+                modifier = Modifier
+                    .padding(padding)
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        text = state.error!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
             return@Scaffold
         }
 
@@ -130,7 +147,8 @@ fun DetailScreen(
             Text(
                 text = detail.productText ?: "No text available.",
                 fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp,
+                fontSize = 13.sp,
+                lineHeight = 20.sp,
                 color = TextSecondary,
                 modifier = Modifier.padding(12.dp)
             )

@@ -16,12 +16,33 @@ export function initFeedView() {
   // Card click delegation
   container.addEventListener('click', (e) => {
     const card = e.target.closest('.product-card');
-    if (card) {
-      const id = card.dataset.productId;
-      store.set('selectedProductId', id);
-      document.dispatchEvent(new CustomEvent('tt:product-selected', { detail: id }));
+    if (card) selectCard(card);
+  });
+
+  // Keyboard navigation
+  container.addEventListener('keydown', (e) => {
+    const card = e.target.closest('.product-card');
+    if (!card) return;
+
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      selectCard(card);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = card.nextElementSibling;
+      if (next && next.classList.contains('product-card')) next.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = card.previousElementSibling;
+      if (prev && prev.classList.contains('product-card')) prev.focus();
     }
   });
+}
+
+function selectCard(card) {
+  const id = card.dataset.productId;
+  store.set('selectedProductId', id);
+  document.dispatchEvent(new CustomEvent('tt:product-selected', { detail: id }));
 }
 
 function renderFeed() {
@@ -45,8 +66,8 @@ function renderFeed() {
     container.innerHTML = `
       <div class="feed-empty">
         <div class="feed-empty__icon">&#127786;</div>
-        <div>No products found</div>
-        <div style="font-size:12px;">Try selecting different product types or check back later</div>
+        <div class="feed-empty__title">No tornado products found</div>
+        <div class="feed-empty__subtitle">Try selecting different categories or check back later for new reports</div>
       </div>
     `;
     return;

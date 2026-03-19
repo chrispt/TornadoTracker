@@ -12,14 +12,14 @@
 }
 
 .tornado-marker__pin {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.8);
+  border: 2.5px solid rgba(255, 255, 255, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   color: white;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -44,8 +44,8 @@
   border-radius: 0;
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
   border: none;
-  width: 24px;
-  height: 22px;
+  width: 30px;
+  height: 28px;
 }
 
 /* Warning polygon overlay */
@@ -67,7 +67,7 @@
 
 .leaflet-popup-content {
   margin: 10px 14px;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
 }
 

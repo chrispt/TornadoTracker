@@ -8,7 +8,19 @@
 
   --text-primary: #e8eaed;
   --text-secondary: #9aa0a6;
-  --text-muted: #5f6368;
+  --text-muted: #7a8290;
+  --bg-card-selected: #242c40;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.4);
+
+  /* Typography scale */
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-lg: 18px;
+  --text-xl: 22px;
 
   --border-color: #2d3548;
   --border-light: #3d4560;

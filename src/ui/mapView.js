@@ -140,9 +140,9 @@ function updateMarkers() {
       html: `<div class="tornado-marker__pin ${extraClass}" style="background:${color};box-shadow:0 0 12px ${color}80;">
         ${letter}
       </div>`,
-      iconSize: [22, 22],
-      iconAnchor: [11, 11],
-      popupAnchor: [0, -11]
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+      popupAnchor: [0, -14]
     });
 
     const marker = L.marker([m.lat, m.lon], { icon });

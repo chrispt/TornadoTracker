@@ -59,21 +59,31 @@ function renderCategoryFilters() {
   const selected = store.get('selectedCategories');
 
   container.innerHTML = Object.entries(CATEGORIES).map(([key, cat]) => {
-    const checked = selected.includes(key) ? 'checked' : '';
+    const isChecked = selected.includes(key);
+    const checkedClass = isChecked ? 'filter-chip--checked' : '';
     return `
-      <label style="display:inline-flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;">
-        <input type="checkbox" value="${key}" ${checked} class="type-filter-cb" />
-        <span class="category-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${cat.color};"></span>
-        <span style="font-weight:500;">${cat.label}</span>
+      <label class="filter-chip ${checkedClass}" style="--filter-chip-color:${cat.color};" tabindex="0">
+        <input type="checkbox" value="${key}" ${isChecked ? 'checked' : ''} class="type-filter-cb sr-only" />
+        <span class="filter-chip__dot" style="background:${cat.color};"></span>
+        <span>${cat.label}</span>
       </label>
     `;
   }).join('');
 
-  container.addEventListener('change', () => {
+  container.addEventListener('change', (e) => {
     const checked = [...container.querySelectorAll('.type-filter-cb:checked')].map(cb => cb.value);
     if (checked.length > 0) {
       store.set('selectedCategories', checked);
       document.dispatchEvent(new CustomEvent('tt:categories-changed', { detail: checked }));
+    } else {
+      // Prevent unchecking the last filter — re-check it
+      e.target.checked = true;
+      return;
     }
+    // Update chip visual states
+    container.querySelectorAll('.filter-chip').forEach(chip => {
+      const cb = chip.querySelector('.type-filter-cb');
+      chip.classList.toggle('filter-chip--checked', cb.checked);
+    });
   });
 }

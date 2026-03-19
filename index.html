@@ -18,13 +18,13 @@
     <header class="app-header" id="app-header"></header>
 
     <!-- Stats bar -->
-    <div class="stats-bar" id="stats-bar"></div>
+    <div class="stats-bar" id="stats-bar" aria-live="polite"></div>
 
     <!-- Sidebar: feed + search -->
     <div class="sidebar" id="sidebar">
-      <div class="sidebar__tabs">
-        <button class="sidebar__tab sidebar__tab--active" data-tab="feed">Feed</button>
-        <button class="sidebar__tab" data-tab="search">Search</button>
+      <div class="sidebar__tabs" role="tablist">
+        <button class="sidebar__tab sidebar__tab--active" data-tab="feed" role="tab" aria-selected="true">Feed</button>
+        <button class="sidebar__tab" data-tab="search" role="tab" aria-selected="false">Search</button>
       </div>
       <div class="sidebar__content" id="sidebar-content">
         <div id="feed-container"></div>

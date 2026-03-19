@@ -5,9 +5,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -43,7 +46,14 @@ fun TornadoHighlights(tornado: TornadoData, index: Int = 0, modifier: Modifier =
 
     if (fields.isEmpty()) return
 
-    Column(modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        tonalElevation = 2.dp,
+        shape = RoundedCornerShape(12.dp)
+    ) {
+    Column(modifier = Modifier.padding(12.dp)) {
         Text(
             text = if (index > 0) "Tornado Report #${index + 1}" else "Tornado Report",
             style = MaterialTheme.typography.titleMedium
@@ -57,7 +67,7 @@ fun TornadoHighlights(tornado: TornadoData, index: Int = 0, modifier: Modifier =
         ) {
             fields.forEach { field ->
                 Column {
-                    Text(text = field.label, fontSize = 10.sp, color = TextSecondary)
+                    Text(text = field.label, fontSize = 11.sp, color = TextSecondary)
                     Text(
                         text = field.value,
                         fontSize = 14.sp,
@@ -72,5 +82,6 @@ fun TornadoHighlights(tornado: TornadoData, index: Int = 0, modifier: Modifier =
             Spacer(modifier = Modifier.height(6.dp))
             Text(text = summary, fontSize = 12.sp, color = TextSecondary)
         }
+    }
     }
 }

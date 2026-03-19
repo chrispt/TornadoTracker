@@ -22,7 +22,7 @@
 .detail-view__meta {
   display: flex;
   gap: var(--space-md);
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   margin-bottom: var(--space-md);
   font-family: var(--font-mono);
@@ -35,11 +35,17 @@
   font-weight: 700;
   font-size: 13px;
   font-family: var(--font-mono);
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   text-align: center;
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-md);
   margin-bottom: var(--space-md);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% { opacity: 0.85; }
 }
 
 /* Parsed tornado highlights */
@@ -52,7 +58,7 @@
 }
 
 .tornado-highlights__title {
-  font-size: 14px;
+  font-size: var(--text-base);
   font-weight: 600;
   margin-bottom: var(--space-sm);
   color: var(--color-tor);
@@ -70,14 +76,14 @@
 }
 
 .tornado-highlights__label {
-  font-size: 11px;
+  font-size: var(--text-sm);
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .tornado-highlights__value {
-  font-size: 14px;
+  font-size: var(--text-base);
   font-weight: 600;
   font-family: var(--font-mono);
 }
@@ -89,12 +95,10 @@
   border-radius: var(--radius-md);
   padding: var(--space-md);
   font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1.6;
+  font-size: 13px;
+  line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-word;
-  max-height: 60vh;
-  overflow-y: auto;
 }
 
 /* Search form */
@@ -112,7 +116,7 @@
 }
 
 .search-form__label {
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   min-width: 60px;
 }
@@ -132,7 +136,7 @@
 
 .search-results__count {
   padding: var(--space-xs) var(--space-md);
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   border-bottom: 1px solid var(--border-color);
 }

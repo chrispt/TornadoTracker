@@ -17,8 +17,10 @@ export function renderProductCard(product, isSelected = false) {
   const selectedClass = isSelected ? 'product-card--selected' : '';
   const subTypeLabel = product._subType ? PRODUCT_SUB_TYPES[product._subType] : null;
 
+  const ariaLabel = `${badgeLabel} from ${office}, ${time}`;
+
   return `
-    <div class="product-card ${selectedClass}" data-product-id="${escapeHtml(product.id)}">
+    <div class="product-card ${selectedClass}" data-product-id="${escapeHtml(product.id)}" tabindex="0" role="article" aria-label="${escapeHtml(ariaLabel)}">
       <span class="product-card__type-badge" style="background:${badgeColor};">${escapeHtml(badgeLabel)}</span>
       <div class="product-card__body">
         <div class="product-card__office">${office}</div>

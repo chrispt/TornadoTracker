@@ -134,7 +134,7 @@ private fun markerColor(marker: TornadoMarker): Int {
 }
 
 private fun createMarkerIcon(marker: TornadoMarker): BitmapDrawable {
-    val size = 32
+    val size = 40
     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -175,7 +175,7 @@ private fun createMarkerIcon(marker: TornadoMarker): BitmapDrawable {
 
     // Draw category letter
     paint.color = 0xFFFFFFFF.toInt()
-    paint.textSize = 14f
+    paint.textSize = 16f
     paint.textAlign = Paint.Align.CENTER
     val text = marker.category?.letter?.toString() ?: "?"
     val textY = size / 2f - (paint.descent() + paint.ascent()) / 2f

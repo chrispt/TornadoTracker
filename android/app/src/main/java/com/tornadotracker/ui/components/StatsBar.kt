@@ -67,7 +67,7 @@ fun StatsBar(stats: FeedStats, modifier: Modifier = Modifier) {
 @Composable
 private fun StatDot(color: androidx.compose.ui.graphics.Color, label: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-        Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(color))
+        Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(color))
         Text(text = label, fontSize = 11.sp, color = TextSecondary)
     }
 }

@@ -24,14 +24,17 @@ val AppTypography = Typography(
     ),
     bodyLarge = TextStyle(
         fontSize = 16.sp,
+        lineHeight = 24.sp,
         color = TextPrimary
     ),
     bodyMedium = TextStyle(
         fontSize = 14.sp,
+        lineHeight = 20.sp,
         color = TextSecondary
     ),
     bodySmall = TextStyle(
-        fontSize = 12.sp,
+        fontSize = 13.sp,
+        lineHeight = 18.sp,
         color = TextSecondary
     ),
     labelMedium = TextStyle(
