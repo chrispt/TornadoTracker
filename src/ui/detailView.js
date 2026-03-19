@@ -1,7 +1,7 @@
 import store from '../state/store.js';
 import { EF_SCALE } from '../config/constants.js';
 import { formatDate, escapeHtml, extractOfficeCode } from '../utils/formatting.js';
-import { zoomToLocation, clearHighlight, invalidateMapSize } from './mapView.js';
+import { zoomToLocation, zoomToLocations, clearHighlight, invalidateMapSize } from './mapView.js';
 
 /**
  * Initialize the detail view — shows full product detail with parsed highlights.
@@ -77,12 +77,14 @@ function renderDetail() {
     </div>
   `;
 
-  // Zoom map to the first tornado's location
+  // Zoom map to tornado location(s)
   invalidateMapSize();
-  if (parsed && parsed.tornadoes && parsed.tornadoes.length > 0) {
-    const t = parsed.tornadoes[0];
-    if (t.lat && t.lon) {
-      zoomToLocation({ lat: t.lat, lon: t.lon, polygon: t.polygon });
+  if (parsed?.tornadoes?.length > 0) {
+    const withCoords = parsed.tornadoes.filter(t => t.lat && t.lon);
+    if (withCoords.length === 1) {
+      zoomToLocation({ lat: withCoords[0].lat, lon: withCoords[0].lon, polygon: withCoords[0].polygon });
+    } else if (withCoords.length > 1) {
+      zoomToLocations(withCoords);
     }
   }
 }

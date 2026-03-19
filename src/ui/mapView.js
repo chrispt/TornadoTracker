@@ -196,6 +196,43 @@ export function zoomToLocation({ lat, lon, polygon } = {}) {
 }
 
 /**
+ * Zoom the map to fit multiple tornado locations, highlighting each.
+ * @param {Array<{lat: number, lon: number, polygon?: Array}>} tornadoes
+ */
+export function zoomToLocations(tornadoes) {
+  if (!map || !tornadoes?.length) return;
+  clearHighlight();
+
+  const bounds = [];
+
+  tornadoes.forEach(t => {
+    if (t.polygon && t.polygon.length >= 3) {
+      const latlngs = t.polygon.map(p => [p.lat, p.lon]);
+      const poly = L.polygon(latlngs, {
+        color: '#f59e0b',
+        weight: 3,
+        fillOpacity: 0.2
+      });
+      highlightLayer.addLayer(poly);
+      bounds.push(...latlngs);
+    } else {
+      const marker = L.circleMarker([t.lat, t.lon], {
+        radius: 10,
+        color: '#f59e0b',
+        weight: 3,
+        fillOpacity: 0.3
+      });
+      highlightLayer.addLayer(marker);
+      bounds.push([t.lat, t.lon]);
+    }
+  });
+
+  if (bounds.length > 0) {
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
+  }
+}
+
+/**
  * Clear highlight layer.
  */
 export function clearHighlight() {
