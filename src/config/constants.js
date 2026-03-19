@@ -10,10 +10,10 @@ export const PRODUCT_TYPES = {
 
 /** User-facing tornado categories */
 export const CATEGORIES = {
-  SURVEY:  { key: 'SURVEY',  label: 'Damage Surveys', color: '#3b82f6', shape: 'diamond' },
-  LSR:     { key: 'LSR',     label: 'Storm Reports',  color: '#8b5cf6', shape: 'square' },
-  PDS:     { key: 'PDS',     label: 'PDS Warnings',   color: '#ef4444', shape: 'triangle' },
-  WARNING: { key: 'WARNING', label: 'Tornado Warnings', color: '#a855f7', shape: 'circle' }
+  SURVEY:  { key: 'SURVEY',  label: 'Damage Surveys', color: '#3b82f6', shape: 'diamond',  letter: 'S' },
+  LSR:     { key: 'LSR',     label: 'Storm Reports',  color: '#8b5cf6', shape: 'square',   letter: 'L' },
+  PDS:     { key: 'PDS',     label: 'PDS Warnings',   color: '#ef4444', shape: 'triangle', letter: 'P' },
+  WARNING: { key: 'WARNING', label: 'Tornado Warnings', color: '#a855f7', shape: 'circle', letter: 'W' }
 };
 
 /** Map NWS sub-type → user-facing category */
@@ -64,7 +64,7 @@ export const STORAGE_KEYS = {
 export const DEFAULT_REFRESH_INTERVAL = 120000;
 
 /** Product list fetch limit */
-export const PRODUCT_FETCH_LIMIT = 50;
+export const PRODUCT_FETCH_LIMIT = 250;
 
 /** Product cache TTL in ms (30 minutes) */
 export const CACHE_TTL = 30 * 60 * 1000;

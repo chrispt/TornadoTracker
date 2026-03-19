@@ -129,16 +129,8 @@ private fun categoryColor(cat: Category): Int = when (cat) {
 }
 
 private fun markerColor(marker: TornadoMarker): Int {
-    // EF rating takes priority
-    return when (marker.efRating) {
-        "EF0" -> 0xFFFDE047.toInt()
-        "EF1" -> 0xFFFACC15.toInt()
-        "EF2" -> 0xFFF97316.toInt()
-        "EF3" -> 0xFFEF4444.toInt()
-        "EF4" -> 0xFFDC2626.toInt()
-        "EF5" -> 0xFF991B1B.toInt()
-        else -> marker.category?.let { categoryColor(it) } ?: 0xFF6B7280.toInt()
-    }
+    // Color by category type
+    return marker.category?.let { categoryColor(it) } ?: 0xFF6B7280.toInt()
 }
 
 private fun createMarkerIcon(marker: TornadoMarker): BitmapDrawable {
@@ -181,11 +173,11 @@ private fun createMarkerIcon(marker: TornadoMarker): BitmapDrawable {
         }
     }
 
-    // Draw EF number or type initial
+    // Draw category letter
     paint.color = 0xFFFFFFFF.toInt()
     paint.textSize = 14f
     paint.textAlign = Paint.Align.CENTER
-    val text = marker.efRating?.removePrefix("EF") ?: marker.category?.key?.first()?.toString() ?: "?"
+    val text = marker.category?.letter?.toString() ?: "?"
     val textY = size / 2f - (paint.descent() + paint.ascent()) / 2f
     canvas.drawText(text, size / 2f, textY, paint)
 

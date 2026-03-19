@@ -9,12 +9,13 @@ enum class Category(
     val key: String,
     val label: String,
     val color: Color,
-    val shape: MarkerShape
+    val shape: MarkerShape,
+    val letter: Char
 ) {
-    SURVEY("SURVEY", "Damage Surveys", Color(0xFF3B82F6), MarkerShape.DIAMOND),
-    LSR("LSR", "Storm Reports", Color(0xFF8B5CF6), MarkerShape.SQUARE),
-    PDS("PDS", "PDS Warnings", Color(0xFFEF4444), MarkerShape.TRIANGLE),
-    WARNING("WARNING", "Tornado Warnings", Color(0xFFA855F7), MarkerShape.CIRCLE);
+    SURVEY("SURVEY", "Damage Surveys", Color(0xFF3B82F6), MarkerShape.DIAMOND, 'S'),
+    LSR("LSR", "Storm Reports", Color(0xFF8B5CF6), MarkerShape.SQUARE, 'L'),
+    PDS("PDS", "PDS Warnings", Color(0xFFEF4444), MarkerShape.TRIANGLE, 'P'),
+    WARNING("WARNING", "Tornado Warnings", Color(0xFFA855F7), MarkerShape.CIRCLE, 'W');
 
     companion object {
         fun fromKey(key: String): Category? = entries.find { it.key == key }

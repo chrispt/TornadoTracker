@@ -1,5 +1,5 @@
 import store from '../state/store.js';
-import { EF_SCALE, MARKER_COLORS, CATEGORIES } from '../config/constants.js';
+import { MARKER_COLORS, CATEGORIES } from '../config/constants.js';
 import { escapeHtml } from '../utils/formatting.js';
 
 let map = null;
@@ -128,21 +128,17 @@ function updateMarkers() {
 
     bounds.push([m.lat, m.lon]);
 
-    // Determine color: EF rating takes priority, then category fallback
-    let color;
-    if (m.efRating && EF_SCALE[m.efRating]) {
-      color = EF_SCALE[m.efRating].markerColor;
-    } else {
-      color = MARKER_COLORS[m.category] || MARKER_COLORS.DEFAULT;
-    }
+    // Color by category type
+    const color = MARKER_COLORS[m.category] || MARKER_COLORS.DEFAULT;
 
     const extraClass = shapeClass(m.category);
+    const letter = CATEGORIES[m.category]?.letter || '?';
 
     // Create marker with custom icon
     const icon = L.divIcon({
       className: 'tornado-marker',
       html: `<div class="tornado-marker__pin ${extraClass}" style="background:${color};box-shadow:0 0 12px ${color}80;">
-        ${m.efRating ? m.efRating.replace('EF', '') : '?'}
+        ${letter}
       </div>`,
       iconSize: [22, 22],
       iconAnchor: [11, 11],

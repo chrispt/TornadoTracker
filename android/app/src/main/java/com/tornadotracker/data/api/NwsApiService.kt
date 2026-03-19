@@ -9,7 +9,7 @@ interface NwsApiService {
     @GET("products")
     suspend fun getProducts(
         @Query("type") type: String,
-        @Query("limit") limit: Int = 50,
+        @Query("limit") limit: Int = 250,
         @Query("office") office: String? = null
     ): ProductListResponse
 

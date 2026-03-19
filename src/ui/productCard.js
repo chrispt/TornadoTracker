@@ -1,5 +1,5 @@
 import { CATEGORIES, PRODUCT_SUB_TYPES } from '../config/constants.js';
-import { timeAgo, truncate, escapeHtml, extractOfficeCode } from '../utils/formatting.js';
+import { timeAgo, escapeHtml, extractOfficeCode } from '../utils/formatting.js';
 
 /**
  * Render a single product card HTML string.
@@ -13,7 +13,7 @@ export function renderProductCard(product, isSelected = false) {
   const badgeLabel = category ? category.label : product.productCode;
   const office = extractOfficeCode(product.issuingOffice);
   const time = timeAgo(product.issuanceTime);
-  const preview = escapeHtml(truncate(product.productName || '', 60));
+  const preview = escapeHtml(product.productName || '');
   const selectedClass = isSelected ? 'product-card--selected' : '';
   const subTypeLabel = product._subType ? PRODUCT_SUB_TYPES[product._subType] : null;
 
