@@ -37,10 +37,13 @@ fun TornadoHighlights(tornado: TornadoData, index: Int = 0, modifier: Modifier =
         tornado.peakWinds?.let { add(HighlightField("Peak Winds", it)) }
         tornado.county?.let { add(HighlightField("County", it)) }
         tornado.state?.let { add(HighlightField("State", it)) }
+        tornado.source?.let { add(HighlightField("Source", it)) }
+        tornado.endTime?.let { add(HighlightField("Until", it)) }
+        tornado.location?.let { add(HighlightField("Location", it)) }
         tornado.fatalities?.let { add(HighlightField("Fatalities", it.toString())) }
         tornado.injuries?.let { add(HighlightField("Injuries", it.toString())) }
         if (tornado.lat != null && tornado.lon != null) {
-            add(HighlightField("Location", "%.2f, %.2f".format(tornado.lat, tornado.lon)))
+            add(HighlightField("Coordinates", "%.2f, %.2f".format(tornado.lat, tornado.lon)))
         }
     }
 
@@ -81,6 +84,16 @@ fun TornadoHighlights(tornado: TornadoData, index: Int = 0, modifier: Modifier =
         tornado.summary?.let { summary ->
             Spacer(modifier = Modifier.height(6.dp))
             Text(text = summary, fontSize = 12.sp, color = TextSecondary)
+        }
+
+        tornado.impact?.let { impact ->
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = impact, fontSize = 12.sp, color = TextSecondary, lineHeight = 16.sp)
+        }
+
+        tornado.motionDescription?.let { motion ->
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = motion, fontSize = 12.sp, color = TextSecondary, lineHeight = 16.sp)
         }
     }
     }

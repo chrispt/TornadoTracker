@@ -68,6 +68,22 @@ class NwsTextParser @Inject constructor() {
         return ParseResult(tornadoes, hasTornadoContent, subType, isPDS)
     }
 
+    private val STATE_NAME_TO_CODE = mapOf(
+        "alabama" to "AL","alaska" to "AK","arizona" to "AZ","arkansas" to "AR",
+        "california" to "CA","colorado" to "CO","connecticut" to "CT","delaware" to "DE",
+        "florida" to "FL","georgia" to "GA","hawaii" to "HI","idaho" to "ID",
+        "illinois" to "IL","indiana" to "IN","iowa" to "IA","kansas" to "KS",
+        "kentucky" to "KY","louisiana" to "LA","maine" to "ME","maryland" to "MD",
+        "massachusetts" to "MA","michigan" to "MI","minnesota" to "MN","mississippi" to "MS",
+        "missouri" to "MO","montana" to "MT","nebraska" to "NE","nevada" to "NV",
+        "new hampshire" to "NH","new jersey" to "NJ","new mexico" to "NM","new york" to "NY",
+        "north carolina" to "NC","north dakota" to "ND","ohio" to "OH","oklahoma" to "OK",
+        "oregon" to "OR","pennsylvania" to "PA","rhode island" to "RI","south carolina" to "SC",
+        "south dakota" to "SD","tennessee" to "TN","texas" to "TX","utah" to "UT",
+        "vermont" to "VT","virginia" to "VA","washington" to "WA","west virginia" to "WV",
+        "wisconsin" to "WI","wyoming" to "WY"
+    )
+
     private fun parseTorWarning(text: String, isPDS: Boolean): ParseResult {
         val polygon = mutableListOf<LatLon>()
         val latLonMatch = Regex("""LAT\.\.\.LON\s+([\d\s]+)""").find(text)
@@ -82,6 +98,43 @@ class NwsTextParser @Inject constructor() {
             }
         }
 
+        // Extract area description from "* Tornado Warning for...\n  <area>..."
+        var summary: String? = null
+        var county: String? = null
+        var state: String? = null
+        val areaMatch = Regex("""\*\s*Tornado Warning for\.\.\.?\s*\n([\s\S]*?)(?=\n\s*\*|\n\n)""", RegexOption.IGNORE_CASE).find(text)
+        if (areaMatch != null) {
+            summary = areaMatch.groupValues[1].replace(Regex("\\s+"), " ").replace(Regex("\\.{3,}"), "").trim()
+            val countyMatch = Regex("""([A-Za-z\s]+?)\s+County""", RegexOption.IGNORE_CASE).find(summary)
+            if (countyMatch != null) county = countyMatch.groupValues[1].trim()
+            val stateNameMatch = Regex("""\bin\s+(?:[\w\s]+?)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s*$""").find(summary)
+            if (stateNameMatch != null) {
+                state = STATE_NAME_TO_CODE[stateNameMatch.groupValues[1].lowercase()]
+            }
+            if (state == null) {
+                val codeMatch = Regex("""\b([A-Z]{2})\b""").find(summary)
+                if (codeMatch != null && codeMatch.groupValues[1] in STATE_CODES) {
+                    state = codeMatch.groupValues[1]
+                }
+            }
+        }
+
+        // Extract end time from "* Until <time>."
+        val untilMatch = Regex("""\*\s*Until\s+(\d{3,4}\s+[AP]M\s+[A-Z]{2,4})\.?""", RegexOption.IGNORE_CASE).find(text)
+        val endTime = untilMatch?.groupValues?.get(1)?.trim()
+
+        // Extract HAZARD, SOURCE, IMPACT
+        val hazard = Regex("""HAZARD\.{3}\s*(.+)""", RegexOption.IGNORE_CASE).find(text)
+            ?.groupValues?.get(1)?.trimEnd('.')?.trim()
+        val source = Regex("""SOURCE\.{3}\s*(.+)""", RegexOption.IGNORE_CASE).find(text)
+            ?.groupValues?.get(1)?.trimEnd('.')?.trim()
+        val impact = Regex("""IMPACT\.{3}\s*([\s\S]*?)(?=\n\s*\n|LAT\.\.\.LON|PRECAUTIONARY)""", RegexOption.IGNORE_CASE).find(text)
+            ?.groupValues?.get(1)?.replace(Regex("\\s+"), " ")?.trimEnd('.')?.trim()
+
+        // Extract motion description from "* At <time>..." paragraph
+        val motionMatch = Regex("""\*\s*At\s+\d{3,4}\s+[AP]M[\s\S]*?(?=\n\s*\n|HAZARD)""", RegexOption.IGNORE_CASE).find(text)
+        val motionDescription = motionMatch?.value?.replaceFirst(Regex("""^\*\s*"""), "")?.replace(Regex("\\s+"), " ")?.trim()
+
         val tornadoes = if (polygon.isNotEmpty()) {
             val centroid = LatLon(
                 lat = polygon.map { it.lat }.average(),
@@ -91,7 +144,14 @@ class NwsTextParser @Inject constructor() {
                 TornadoData(
                     lat = centroid.lat,
                     lon = centroid.lon,
-                    summary = "Tornado Warning",
+                    county = county,
+                    state = state,
+                    endTime = endTime,
+                    summary = summary ?: "Tornado Warning",
+                    source = source,
+                    hazard = hazard,
+                    impact = impact,
+                    motionDescription = motionDescription,
                     polygon = polygon
                 )
             )
@@ -109,29 +169,78 @@ class NwsTextParser @Inject constructor() {
 
         for (i in lines.indices) {
             val line = lines[i]
-            if (line.contains("TORNADO", ignoreCase = true) && !line.contains("WATERSPOUT", ignoreCase = true)) {
-                val contextStart = maxOf(0, i - 2)
-                val contextEnd = minOf(lines.size, i + 4)
-                val context = lines.subList(contextStart, contextEnd).joinToString("\n")
-                val coordMatch = Regex("""([-]?\d{2,3}\.\d+)\s+([-]?\d{2,3}\.\d+)""").find(context)
+            if (!line.contains("TORNADO", ignoreCase = true) || line.contains("WATERSPOUT", ignoreCase = true)) continue
 
-                var lat: Double? = null
-                var lon: Double? = null
+            val line1 = line.trim()
 
-                if (coordMatch != null) {
-                    lat = coordMatch.groupValues[1].toDoubleOrNull()
-                    lon = coordMatch.groupValues[2].toDoubleOrNull()
+            // Extract time from start of line (e.g., "1103 PM")
+            val timeMatch = Regex("""^(\d{3,4}\s+[AP]M)\b""", RegexOption.IGNORE_CASE).find(line1)
+            val startTime = timeMatch?.groupValues?.get(1)?.trim()
+
+            // Extract location description (between event type and coordinates)
+            val locMatch = Regex("""TORNADO\s{2,}(.+?)\s{2,}\d""", RegexOption.IGNORE_CASE).find(line1)
+            val location = locMatch?.groupValues?.get(1)?.trim()
+
+            // Extract coordinates (decimal with N/S/E/W suffixes or plain decimal)
+            var lat: Double? = null
+            var lon: Double? = null
+            val nwsCoordMatch = Regex("""(\d+\.\d+)\s*([NS])\s+(\d+\.\d+)\s*([WE])""", RegexOption.IGNORE_CASE).find(line1)
+            if (nwsCoordMatch != null) {
+                lat = nwsCoordMatch.groupValues[1].toDoubleOrNull()
+                if (nwsCoordMatch.groupValues[2].uppercase() == "S") lat = lat?.let { -it }
+                lon = nwsCoordMatch.groupValues[3].toDoubleOrNull()
+                if (nwsCoordMatch.groupValues[4].uppercase() == "W") lon = lon?.let { -it }
+            } else {
+                val decCoordMatch = Regex("""([-]?\d{2,3}\.\d+)\s+([-]?\d{2,3}\.\d+)""").find(line1)
+                if (decCoordMatch != null) {
+                    lat = decCoordMatch.groupValues[1].toDoubleOrNull()
+                    lon = decCoordMatch.groupValues[2].toDoubleOrNull()
                     if (lon != null && lon > 0) lon = -lon
                 }
-
-                tornadoes.add(
-                    TornadoData(
-                        lat = lat,
-                        lon = lon,
-                        summary = line.trim().take(200)
-                    )
-                )
             }
+
+            // Parse continuation line for county, state, source
+            var county: String? = null
+            var state: String? = null
+            var source: String? = null
+            if (i + 1 < lines.size) {
+                val line2 = lines[i + 1]
+                val contMatch = Regex("""^\s*\d{2}/\d{2}/\d{4}\s+(.*)""").find(line2)
+                if (contMatch != null) {
+                    val rest = contMatch.groupValues[1]
+                    val fieldsMatch = Regex("""^\s*([A-Za-z\s.'-]+?)\s{2,}([A-Z]{2})\s{2,}(.+)""").find(rest)
+                    if (fieldsMatch != null) {
+                        county = fieldsMatch.groupValues[1].trim()
+                        val stCode = fieldsMatch.groupValues[2].trim()
+                        if (stCode in STATE_CODES) state = stCode
+                        source = fieldsMatch.groupValues[3].trim()
+                    }
+                }
+            }
+
+            // Build rich summary
+            val parts = mutableListOf<String>()
+            if (startTime != null) parts.add(startTime)
+            parts.add("Tornado")
+            if (location != null) parts.add(location)
+            if (county != null) {
+                val loc = "$county County" + if (state != null) ", $state" else ""
+                parts.add(loc)
+            }
+            if (source != null) parts.add("($source)")
+
+            tornadoes.add(
+                TornadoData(
+                    lat = lat,
+                    lon = lon,
+                    county = county,
+                    state = state,
+                    startTime = startTime,
+                    summary = parts.joinToString(" - "),
+                    source = source,
+                    location = location
+                )
+            )
         }
 
         return ParseResult(

@@ -288,9 +288,52 @@ function parseTorWarning(text, isPDS = false) {
     }
   }
 
+  // Extract area description from "* Tornado Warning for...\n  <area>..."
+  let summary = null;
+  let county = null;
+  let state = null;
+  const areaMatch = text.match(/\*\s*Tornado Warning for\.\.\.?\s*\n([\s\S]*?)(?=\n\s*\*|\n\n)/i);
+  if (areaMatch) {
+    summary = areaMatch[1].replace(/\s+/g, ' ').replace(/\.{3,}/g, '').trim();
+    const countyMatch = summary.match(/([A-Za-z\s]+?)\s+County/i);
+    if (countyMatch) county = countyMatch[1].trim();
+    const stateMatch = summary.match(/\bin\s+(?:[\w\s]+?)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s*$/);
+    if (stateMatch) {
+      const stateAbbr = stateNameToCode(stateMatch[1]);
+      if (stateAbbr) state = stateAbbr;
+    }
+    // Fallback: look for two-letter state code in the area text
+    if (!state) {
+      const codeMatch = summary.match(/\b([A-Z]{2})\b/);
+      if (codeMatch && isStateCode(codeMatch[1])) state = codeMatch[1];
+    }
+  }
+
+  // Extract end time from "* Until <time>."
+  let endTime = null;
+  const untilMatch = text.match(/\*\s*Until\s+(\d{3,4}\s+[AP]M\s+[A-Z]{2,4})\.?/i);
+  if (untilMatch) endTime = untilMatch[1].trim();
+
+  // Extract HAZARD, SOURCE, IMPACT lines
+  let hazard = null;
+  let source = null;
+  let impact = null;
+  const hazardMatch = text.match(/HAZARD\.{3}\s*(.+)/i);
+  if (hazardMatch) hazard = hazardMatch[1].replace(/\.+$/, '').trim();
+  const sourceMatch = text.match(/SOURCE\.{3}\s*(.+)/i);
+  if (sourceMatch) source = sourceMatch[1].replace(/\.+$/, '').trim();
+  const impactMatch = text.match(/IMPACT\.{3}\s*([\s\S]*?)(?=\n\s*\n|LAT\.\.\.LON|PRECAUTIONARY)/i);
+  if (impactMatch) impact = impactMatch[1].replace(/\s+/g, ' ').replace(/\.+$/, '').trim();
+
+  // Extract motion description from "* At <time>..." paragraph
+  let motionDescription = null;
+  const motionMatch = text.match(/\*\s*At\s+\d{3,4}\s+[AP]M[\s\S]*?(?=\n\s*\n|HAZARD)/i);
+  if (motionMatch) {
+    motionDescription = motionMatch[0].replace(/^\*\s*/, '').replace(/\s+/g, ' ').trim();
+  }
+
   const tornadoes = [];
   if (polygon.length > 0) {
-    // Use centroid as the marker location
     const centroid = {
       lat: polygon.reduce((s, p) => s + p.lat, 0) / polygon.length,
       lon: polygon.reduce((s, p) => s + p.lon, 0) / polygon.length
@@ -302,14 +345,18 @@ function parseTorWarning(text, isPDS = false) {
       pathWidth: null,
       lat: centroid.lat,
       lon: centroid.lon,
-      county: null,
-      state: null,
+      county,
+      state,
       fatalities: null,
       injuries: null,
       peakWinds: null,
       startTime: null,
-      endTime: null,
-      summary: 'Tornado Warning',
+      endTime,
+      summary: summary || 'Tornado Warning',
+      source,
+      hazard,
+      impact,
+      motionDescription,
       polygon
     });
   }
@@ -325,35 +372,91 @@ function parseLSR(text) {
   const lines = text.split('\n');
 
   for (let i = 0; i < lines.length; i++) {
-    if (/TORNADO/i.test(lines[i]) && !/WATERSPOUT/i.test(lines[i])) {
-      // LSR format: coordinates are often on nearby lines
-      const context = lines.slice(Math.max(0, i - 2), i + 4).join('\n');
-      const coordMatch = context.match(/([-]?\d{2,3}\.\d+)\s+([-]?\d{2,3}\.\d+)/);
+    if (!/TORNADO/i.test(lines[i]) || /WATERSPOUT/i.test(lines[i])) continue;
 
-      const entry = {
-        efRating: null,
-        pathLength: null,
-        pathWidth: null,
-        lat: null,
-        lon: null,
-        county: null,
-        state: null,
-        fatalities: null,
-        injuries: null,
-        peakWinds: null,
-        startTime: null,
-        endTime: null,
-        summary: lines[i].trim().slice(0, 200)
-      };
+    // Parse LSR two-line tabular format:
+    // Line 1: TIME     TORNADO       LOCATION          LAT    LON
+    // Line 2: DATE                   COUNTY     ST  SOURCE
+    const line1 = lines[i].trim();
 
-      if (coordMatch) {
-        entry.lat = parseFloat(coordMatch[1]);
-        entry.lon = parseFloat(coordMatch[2]);
-        if (entry.lon > 0) entry.lon = -entry.lon;
+    // Extract time from start of line (e.g., "1103 PM")
+    let startTime = null;
+    const timeMatch = line1.match(/^(\d{3,4}\s+[AP]M)\b/i);
+    if (timeMatch) startTime = timeMatch[1].trim();
+
+    // Extract location description (between event type and coordinates)
+    let location = null;
+    const locMatch = line1.match(/TORNADO\s{2,}(.+?)\s{2,}\d/i);
+    if (locMatch) location = locMatch[1].trim();
+
+    // Extract coordinates (decimal with N/S/E/W suffixes or plain decimal)
+    let lat = null;
+    let lon = null;
+    const nwsCoordMatch = line1.match(/(\d+\.\d+)\s*([NS])\s+(\d+\.\d+)\s*([WE])/i);
+    if (nwsCoordMatch) {
+      lat = parseFloat(nwsCoordMatch[1]);
+      if (nwsCoordMatch[2].toUpperCase() === 'S') lat = -lat;
+      lon = parseFloat(nwsCoordMatch[3]);
+      if (nwsCoordMatch[4].toUpperCase() === 'W') lon = -lon;
+    } else {
+      const decCoordMatch = line1.match(/([-]?\d{2,3}\.\d+)\s+([-]?\d{2,3}\.\d+)/);
+      if (decCoordMatch) {
+        lat = parseFloat(decCoordMatch[1]);
+        lon = parseFloat(decCoordMatch[2]);
+        if (lon > 0) lon = -lon;
       }
-
-      tornadoes.push(entry);
     }
+
+    // Parse continuation line for county, state, source
+    let county = null;
+    let state = null;
+    let source = null;
+    if (i + 1 < lines.length) {
+      const line2 = lines[i + 1];
+      // Continuation line format: DATE              COUNTY     ST  SOURCE
+      const contMatch = line2.match(/^\s*\d{2}\/\d{2}\/\d{4}\s+(.*)/);
+      if (contMatch) {
+        const rest = contMatch[1];
+        // Parse: COUNTY     ST  SOURCE
+        const fieldsMatch = rest.match(/^\s*([A-Za-z\s.'-]+?)\s{2,}([A-Z]{2})\s{2,}(.+)/);
+        if (fieldsMatch) {
+          county = fieldsMatch[1].trim();
+          const stCode = fieldsMatch[2].trim();
+          if (isStateCode(stCode)) state = stCode;
+          source = fieldsMatch[3].trim();
+        }
+      }
+    }
+
+    // Build a rich summary from parsed fields
+    const parts = [];
+    if (startTime) parts.push(startTime);
+    parts.push('Tornado');
+    if (location) parts.push(location);
+    if (county) {
+      const loc = `${county} County` + (state ? `, ${state}` : '');
+      parts.push(loc);
+    }
+    if (source) parts.push(`(${source})`);
+    const summary = parts.join(' - ');
+
+    tornadoes.push({
+      efRating: null,
+      pathLength: null,
+      pathWidth: null,
+      lat,
+      lon,
+      county,
+      state,
+      fatalities: null,
+      injuries: null,
+      peakWinds: null,
+      startTime,
+      endTime: null,
+      summary,
+      source,
+      location
+    });
   }
 
   return { tornadoes, hasTornadoContent: tornadoes.length > 0 || hasTornadoKeywords(text), subType: 'LSR', isPDS: false };
@@ -370,6 +473,25 @@ function hasTornadoKeywords(text) {
 /**
  * Check if a 2-letter code is a US state abbreviation.
  */
+/**
+ * Convert a full state name to its two-letter abbreviation.
+ */
+function stateNameToCode(name) {
+  const map = {
+    'alabama':'AL','alaska':'AK','arizona':'AZ','arkansas':'AR','california':'CA',
+    'colorado':'CO','connecticut':'CT','delaware':'DE','florida':'FL','georgia':'GA',
+    'hawaii':'HI','idaho':'ID','illinois':'IL','indiana':'IN','iowa':'IA','kansas':'KS',
+    'kentucky':'KY','louisiana':'LA','maine':'ME','maryland':'MD','massachusetts':'MA',
+    'michigan':'MI','minnesota':'MN','mississippi':'MS','missouri':'MO','montana':'MT',
+    'nebraska':'NE','nevada':'NV','new hampshire':'NH','new jersey':'NJ','new mexico':'NM',
+    'new york':'NY','north carolina':'NC','north dakota':'ND','ohio':'OH','oklahoma':'OK',
+    'oregon':'OR','pennsylvania':'PA','rhode island':'RI','south carolina':'SC',
+    'south dakota':'SD','tennessee':'TN','texas':'TX','utah':'UT','vermont':'VT',
+    'virginia':'VA','washington':'WA','west virginia':'WV','wisconsin':'WI','wyoming':'WY'
+  };
+  return map[name.toLowerCase()] || null;
+}
+
 function isStateCode(code) {
   const states = new Set([
     'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',

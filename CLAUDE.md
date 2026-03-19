@@ -4,7 +4,6 @@ Displays past and recent tornado information using the NWS API.
 
 ## Tech Stack
 - Vanilla JS + Vite (no framework)
-- Leaflet for mapping
 - date-fns for date formatting
 - Pub/sub Store pattern (adapted from Birding Weather Dashboard)
 
@@ -13,7 +12,7 @@ Displays past and recent tornado information using the NWS API.
 - `src/state/store.js` — centralized pub/sub state management
 - `src/api/` — NWS API client with error handling
 - `src/utils/textParser.js` — regex parser for NWS product text (PNS tornado surveys, TOR warning polygons)
-- `src/ui/` — UI components that subscribe to store changes
+- `src/ui/` — UI components that subscribe to store changes (master/detail layout: sidebar feed + detail panel)
 - `src/modules/productCache.js` — in-memory cache with TTL
 
 ## NWS API
@@ -32,7 +31,7 @@ Displays past and recent tornado information using the NWS API.
 ## Android Companion App
 - Located in `android/` subdirectory
 - Kotlin + Jetpack Compose + Material 3, MVVM architecture
-- Hilt DI, Retrofit, Room, WorkManager, osmdroid
+- Hilt DI, Retrofit, Room, WorkManager
 - `android/app/src/main/java/com/tornadotracker/domain/parser/NwsTextParser.kt` — Kotlin port of `src/utils/textParser.js`
 
 ## Commands

@@ -18,6 +18,11 @@ data class TornadoData(
     val startTime: String? = null,
     val endTime: String? = null,
     val summary: String? = null,
+    val source: String? = null,
+    val hazard: String? = null,
+    val impact: String? = null,
+    val motionDescription: String? = null,
+    val location: String? = null,
     val polygon: List<LatLon>? = null
 )
 

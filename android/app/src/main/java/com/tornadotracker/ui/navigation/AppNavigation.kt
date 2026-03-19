@@ -3,7 +3,6 @@ package com.tornadotracker.ui.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -23,12 +22,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.tornadotracker.ui.detail.DetailScreen
 import com.tornadotracker.ui.feed.FeedScreen
-import com.tornadotracker.ui.map.MapScreen
 import com.tornadotracker.ui.search.SearchScreen
 import kotlinx.serialization.Serializable
 
 @Serializable object FeedRoute
-@Serializable object MapRoute
 @Serializable object SearchRoute
 @Serializable data class DetailRoute(val productId: String)
 
@@ -45,7 +42,6 @@ fun AppNavigation() {
 
     val bottomItems = listOf(
         BottomNavItem("Feed", Icons.AutoMirrored.Filled.List, FeedRoute),
-        BottomNavItem("Map", Icons.Default.Place, MapRoute),
         BottomNavItem("Search", Icons.Default.Search, SearchRoute)
     )
 
@@ -61,7 +57,6 @@ fun AppNavigation() {
                     bottomItems.forEach { item ->
                         val selected = when (item.route) {
                             is FeedRoute -> currentRoute?.hasRoute<FeedRoute>() == true
-                            is MapRoute -> currentRoute?.hasRoute<MapRoute>() == true
                             is SearchRoute -> currentRoute?.hasRoute<SearchRoute>() == true
                             else -> false
                         }
@@ -93,12 +88,6 @@ fun AppNavigation() {
                 FeedScreen(
                     onProductClick = { id -> navController.navigate(DetailRoute(id)) },
                     viewModel = feedViewModel
-                )
-            }
-            composable<MapRoute> {
-                MapScreen(
-                    markers = emptyList(),
-                    onMarkerClick = { id -> navController.navigate(DetailRoute(id)) }
                 )
             }
             composable<SearchRoute> {

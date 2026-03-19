@@ -7,8 +7,6 @@ const initialState = {
   parsedTornadoData: null,
   searchResults: [],
   searchFilters: { type: 'PNS', office: '', startDate: '', endDate: '', keyword: '' },
-  tornadoMarkers: [],
-  selectedProductMarkers: [],
   activeView: 'feed',
   selectedCategories: ['SURVEY', 'LSR', 'PDS', 'WARNING'],
   refreshInterval: DEFAULT_REFRESH_INTERVAL,

@@ -10,10 +10,10 @@ export const PRODUCT_TYPES = {
 
 /** User-facing tornado categories */
 export const CATEGORIES = {
-  SURVEY:  { key: 'SURVEY',  label: 'Damage Surveys', color: '#3b82f6', shape: 'diamond',  letter: 'S' },
-  LSR:     { key: 'LSR',     label: 'Storm Reports',  color: '#8b5cf6', shape: 'square',   letter: 'L' },
-  PDS:     { key: 'PDS',     label: 'PDS Warnings',   color: '#ef4444', shape: 'triangle', letter: 'P' },
-  WARNING: { key: 'WARNING', label: 'Tornado Warnings', color: '#a855f7', shape: 'circle', letter: 'W' }
+  SURVEY:  { key: 'SURVEY',  label: 'Damage Surveys', color: '#3b82f6' },
+  LSR:     { key: 'LSR',     label: 'Storm Reports',  color: '#8b5cf6' },
+  PDS:     { key: 'PDS',     label: 'PDS Warnings',   color: '#ef4444' },
+  WARNING: { key: 'WARNING', label: 'Tornado Warnings', color: '#a855f7' }
 };
 
 /** Map NWS sub-type → user-facing category */
@@ -27,22 +27,13 @@ export const SUB_TYPE_TO_CATEGORY = {
 
 /** EF Scale colors and labels */
 export const EF_SCALE = {
-  EF0: { label: 'EF0 (65-85 mph)', color: '#fde047', markerColor: '#fde047' },
-  EF1: { label: 'EF1 (86-110 mph)', color: '#facc15', markerColor: '#facc15' },
-  EF2: { label: 'EF2 (111-135 mph)', color: '#f97316', markerColor: '#f97316' },
-  EF3: { label: 'EF3 (136-165 mph)', color: '#ef4444', markerColor: '#ef4444' },
-  EF4: { label: 'EF4 (166-200 mph)', color: '#dc2626', markerColor: '#dc2626' },
-  EF5: { label: 'EF5 (200+ mph)', color: '#991b1b', markerColor: '#991b1b' },
-  UNKNOWN: { label: 'Unknown', color: '#6b7280', markerColor: '#6b7280' }
-};
-
-/** Marker color by category (fallback when no EF rating) */
-export const MARKER_COLORS = {
-  SURVEY: '#3b82f6',
-  LSR: '#8b5cf6',
-  PDS: '#ef4444',
-  WARNING: '#a855f7',
-  DEFAULT: '#6b7280'
+  EF0: { label: 'EF0 (65-85 mph)', color: '#fde047' },
+  EF1: { label: 'EF1 (86-110 mph)', color: '#facc15' },
+  EF2: { label: 'EF2 (111-135 mph)', color: '#f97316' },
+  EF3: { label: 'EF3 (136-165 mph)', color: '#ef4444' },
+  EF4: { label: 'EF4 (166-200 mph)', color: '#dc2626' },
+  EF5: { label: 'EF5 (200+ mph)', color: '#991b1b' },
+  UNKNOWN: { label: 'Unknown', color: '#6b7280' }
 };
 
 /** Sub-type labels for product cards */

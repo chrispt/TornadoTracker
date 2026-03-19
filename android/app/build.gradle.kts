@@ -80,9 +80,6 @@ dependencies {
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.10.0")
 
-    // osmdroid
-    implementation("org.osmdroid:osmdroid-android:6.1.20")
-
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
 

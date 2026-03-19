@@ -15,7 +15,6 @@ import { initFeedView } from './ui/feedView.js';
 import { initDetailView } from './ui/detailView.js';
 import { initSearchView } from './ui/searchView.js';
 import { initStatsBar } from './ui/statsBar.js';
-import { initMap } from './ui/mapView.js';
 
 let pollTimer = null;
 let currentOffice = '';
@@ -30,7 +29,6 @@ async function init() {
   initDetailView();
   initSearchView();
   initStatsBar();
-  initMap();
 
   setupTabSwitching();
   setupEventListeners();
@@ -84,10 +82,9 @@ async function refreshProducts() {
     }
   });
 
-  // Show TOR products in feed immediately, map starts empty
+  // Show TOR products in feed immediately
   allTornadoProducts = [...torProducts];
   applyFilterAndUpdateStore();
-  store.set('selectedProductMarkers', []);
   store.set('lastFetchTime', new Date().toISOString());
   store.set('isLoading', false);
 
@@ -177,39 +174,9 @@ async function fetchAndParseProduct(product) {
   return null;
 }
 
-/**
- * Extract tornado markers from parsed product data and push to array.
- */
-function collectMarkers(markers, product, cached) {
-  if (!cached?.parsedData?.tornadoes) return;
-  cached.parsedData.tornadoes.forEach(t => {
-    if (t.lat && t.lon) {
-      markers.push({
-        lat: t.lat,
-        lon: t.lon,
-        efRating: t.efRating,
-        productId: product.id,
-        label: product.productName || '',
-        county: t.county,
-        pathLength: t.pathLength,
-        type: product.productCode,
-        category: product._category,
-        polygon: t.polygon || null,
-        pathLine: (t.startLat && t.endLat) ? [
-          { lat: t.startLat, lon: t.startLon },
-          { lat: t.endLat, lon: t.endLon }
-        ] : null
-      });
-    }
-  });
-}
-
 // ── Product Detail Loading ────────────────────
 
 async function loadProductDetail(id) {
-  // Find the product in our list so we can build markers with its category
-  const product = allTornadoProducts.find(p => p.id === id);
-
   // Check cache
   let cached = productCache.get(id);
   if (cached) {
@@ -217,10 +184,6 @@ async function loadProductDetail(id) {
       selectedProductDetail: cached.detail,
       parsedTornadoData: cached.parsedData
     });
-    // Build markers for this product and show on map
-    const markers = [];
-    if (product) collectMarkers(markers, product, cached);
-    store.set('selectedProductMarkers', markers);
     return;
   }
 
@@ -240,11 +203,6 @@ async function loadProductDetail(id) {
     selectedProductDetail: data,
     parsedTornadoData: parsed
   });
-
-  // Build markers for this product and show on map
-  const markers = [];
-  if (product) collectMarkers(markers, product, { detail: data, parsedData: parsed });
-  store.set('selectedProductMarkers', markers);
 }
 
 // ── Polling ───────────────────────────────────

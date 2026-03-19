@@ -7,9 +7,7 @@ import com.tornadotracker.data.cache.ProductCache
 import com.tornadotracker.domain.model.Category
 import com.tornadotracker.domain.model.NwsProduct
 import com.tornadotracker.domain.model.ParseResult
-import com.tornadotracker.domain.model.TornadoMarker
 import com.tornadotracker.domain.parser.NwsTextParser
-import com.tornadotracker.domain.model.LatLon
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -113,34 +111,6 @@ class NwsRepository @Inject constructor(
                 }.awaitAll().filterNotNull()
             }
             batchResults.forEach { product -> emit(product) }
-        }
-    }
-
-    /**
-     * Build markers for a single product from cache.
-     */
-    fun getProductMarkers(id: String): List<TornadoMarker> {
-        val cached = cache.get(id) ?: return emptyList()
-        val parsed = cached.parsedData ?: return emptyList()
-        if (parsed.tornadoes == null) return emptyList()
-
-        val category = Category.fromSubType(parsed.subType ?: "")
-        return parsed.tornadoes.filter { it.lat != null && it.lon != null }.map { t ->
-            TornadoMarker(
-                lat = t.lat!!,
-                lon = t.lon!!,
-                efRating = t.efRating,
-                productId = id,
-                label = "",
-                county = t.county,
-                pathLength = t.pathLength,
-                type = "",
-                category = category,
-                polygon = t.polygon,
-                pathLine = if (t.startLat != null && t.endLat != null) {
-                    listOf(LatLon(t.startLat, t.startLon!!), LatLon(t.endLat, t.endLon!!))
-                } else null
-            )
         }
     }
 

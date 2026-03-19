@@ -1,7 +1,6 @@
 import store from '../state/store.js';
 import { EF_SCALE } from '../config/constants.js';
 import { formatDate, escapeHtml, extractOfficeCode } from '../utils/formatting.js';
-import { zoomToLocation, zoomToLocations, clearHighlight, invalidateMapSize } from './mapView.js';
 
 /**
  * Initialize the detail view — shows full product detail with parsed highlights.
@@ -18,30 +17,27 @@ export function initDetailView() {
         selectedProductDetail: null,
         parsedTornadoData: null
       });
-      document.getElementById('detail-panel').classList.add('hidden');
-      document.getElementById('main-panel')?.classList.remove('main-panel--split');
-      clearHighlight();
-      invalidateMapSize();
     }
   });
+
+  // Show empty state on init
+  renderDetail();
 }
 
 function renderDetail() {
   const panel = document.getElementById('detail-panel');
   if (!panel) return;
 
-  const mainPanel = document.getElementById('main-panel');
   const detail = store.get('selectedProductDetail');
   if (!detail) {
-    panel.classList.add('hidden');
-    mainPanel?.classList.remove('main-panel--split');
-    clearHighlight();
-    invalidateMapSize();
+    panel.innerHTML = `
+      <div class="detail-empty-state">
+        <div class="detail-empty-state__icon">&#x1F32A;</div>
+        <div class="detail-empty-state__text">Select a product to view details</div>
+      </div>
+    `;
     return;
   }
-
-  panel.classList.remove('hidden');
-  mainPanel?.classList.add('main-panel--split');
 
   const parsed = store.get('parsedTornadoData');
   const office = extractOfficeCode(detail.issuingOffice);
@@ -86,22 +82,6 @@ function renderDetail() {
       <div class="detail-view__raw">${escapeHtml(detail.productText || 'No text available.')}</div>
     </div>
   `;
-
-  // Zoom map to tornado location(s)
-  invalidateMapSize();
-  if (parsed?.tornadoes?.length > 0) {
-    const withCoords = parsed.tornadoes.filter(t => t.lat && t.lon);
-    if (withCoords.length === 1) {
-      const t = withCoords[0];
-      const pathLine = (t.startLat && t.endLat) ? [
-        { lat: t.startLat, lon: t.startLon },
-        { lat: t.endLat, lon: t.endLon }
-      ] : null;
-      zoomToLocation({ lat: t.lat, lon: t.lon, polygon: t.polygon, pathLine });
-    } else if (withCoords.length > 1) {
-      zoomToLocations(withCoords);
-    }
-  }
 }
 
 function renderTornadoHighlight(tornado, index) {
@@ -115,14 +95,23 @@ function renderTornadoHighlight(tornado, index) {
     { label: 'Peak Winds', value: tornado.peakWinds },
     { label: 'County', value: tornado.county },
     { label: 'State', value: tornado.state },
+    { label: 'Source', value: tornado.source },
+    { label: 'Until', value: tornado.endTime },
+    { label: 'Location', value: tornado.location },
     { label: 'Fatalities', value: tornado.fatalities !== null ? String(tornado.fatalities) : null },
     { label: 'Injuries', value: tornado.injuries !== null ? String(tornado.injuries) : null },
-    { label: 'Location', value: tornado.lat ? (
+    { label: 'Coordinates', value: tornado.lat ? (
       tornado.startLat && tornado.endLat
         ? `${tornado.startLat.toFixed(2)}, ${tornado.startLon.toFixed(2)} → ${tornado.endLat.toFixed(2)}, ${tornado.endLon.toFixed(2)}`
         : `${tornado.lat.toFixed(2)}, ${tornado.lon.toFixed(2)}`
     ) : null }
   ].filter(f => f.value);
+
+  // Longer text fields shown as paragraphs below the grid
+  const paragraphs = [
+    tornado.impact,
+    tornado.motionDescription
+  ].filter(Boolean);
 
   return `
     <div class="tornado-highlights">
@@ -140,6 +129,7 @@ function renderTornadoHighlight(tornado, index) {
         `).join('')}
       </div>
       ${tornado.summary ? `<p style="margin-top:var(--space-sm);font-size:12px;color:var(--text-secondary);">${escapeHtml(tornado.summary)}</p>` : ''}
+      ${paragraphs.map(p => `<p style="margin-top:var(--space-xs);font-size:12px;color:var(--text-secondary);line-height:1.4;">${escapeHtml(p)}</p>`).join('')}
     </div>
   `;
 }
