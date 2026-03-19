@@ -11,15 +11,18 @@ val SurfaceVariant = Color(0xFF2A3347)
 val TextPrimary = Color(0xFFE8EAED)
 val TextSecondary = Color(0xFF9AA0A6)
 
-// Product type colors
+// Product type colors (kept for search view)
 val PnsColor = Color(0xFF3B82F6)
 val TorColor = Color(0xFFEF4444)
 val LsrColor = Color(0xFF8B5CF6)
 
+// Category colors
+val SurveyColor = Color(0xFF3B82F6)
+val LsrCategoryColor = Color(0xFF8B5CF6)
+val PdsColor = Color(0xFFEF4444)
+val WarningColor = Color(0xFFA855F7)
+
 // Marker colors
-val MarkerTor = Color(0xFFA855F7)
-val MarkerPns = Color(0xFF3B82F6)
-val MarkerLsr = Color(0xFF8B5CF6)
 val MarkerDefault = Color(0xFF6B7280)
 
 // EF Scale colors
@@ -43,11 +46,4 @@ fun efColor(rating: String?): Color = when (rating) {
     "EF4" -> Ef4Color
     "EF5" -> Ef5Color
     else -> EfUnknown
-}
-
-fun productTypeColor(code: String): Color = when (code) {
-    "PNS" -> PnsColor
-    "TOR" -> TorColor
-    "LSR" -> LsrColor
-    else -> MarkerDefault
 }

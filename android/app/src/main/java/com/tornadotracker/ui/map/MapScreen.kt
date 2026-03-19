@@ -3,16 +3,17 @@ package com.tornadotracker.ui.map
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.drawable.BitmapDrawable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import com.tornadotracker.domain.model.Category
+import com.tornadotracker.domain.model.MarkerShape
 import com.tornadotracker.domain.model.TornadoMarker
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.BoundingBox
@@ -63,8 +64,9 @@ fun MapScreen(
                     val polygon = Polygon().apply {
                         val polyPoints = marker.polygon.map { GeoPoint(it.lat, it.lon) }
                         points = polyPoints + polyPoints.first()
-                        fillPaint.color = 0x26A855F7.toInt() // purple 15%
-                        outlinePaint.color = 0xFFA855F7.toInt()
+                        val catColor = marker.category?.let { categoryColor(it) } ?: 0xFFA855F7.toInt()
+                        fillPaint.color = (catColor and 0x00FFFFFF) or 0x26000000
+                        outlinePaint.color = catColor
                         outlinePaint.strokeWidth = 2f
                     }
                     map.overlays.add(polygon)
@@ -74,7 +76,7 @@ fun MapScreen(
                 val mapMarker = Marker(map).apply {
                     position = point
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                    title = marker.efRating ?: marker.type
+                    title = marker.efRating ?: marker.category?.label ?: marker.type
                     snippet = buildString {
                         marker.county?.let { append("$it · ") }
                         marker.pathLength?.let { append(it) }
@@ -103,35 +105,71 @@ fun MapScreen(
     )
 }
 
-private fun createMarkerIcon(marker: TornadoMarker): BitmapDrawable {
-    val size = 32
-    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bitmap)
-    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+private fun categoryColor(cat: Category): Int = when (cat) {
+    Category.SURVEY  -> 0xFF3B82F6.toInt()
+    Category.LSR     -> 0xFF8B5CF6.toInt()
+    Category.PDS     -> 0xFFEF4444.toInt()
+    Category.WARNING -> 0xFFA855F7.toInt()
+}
 
-    // Circle color based on EF rating or type
-    paint.color = when (marker.efRating) {
+private fun markerColor(marker: TornadoMarker): Int {
+    // EF rating takes priority
+    return when (marker.efRating) {
         "EF0" -> 0xFFFDE047.toInt()
         "EF1" -> 0xFFFACC15.toInt()
         "EF2" -> 0xFFF97316.toInt()
         "EF3" -> 0xFFEF4444.toInt()
         "EF4" -> 0xFFDC2626.toInt()
         "EF5" -> 0xFF991B1B.toInt()
-        else -> when (marker.type) {
-            "TOR" -> 0xFFA855F7.toInt()
-            "PNS" -> 0xFF3B82F6.toInt()
-            "LSR" -> 0xFF8B5CF6.toInt()
-            else -> 0xFF6B7280.toInt()
+        else -> marker.category?.let { categoryColor(it) } ?: 0xFF6B7280.toInt()
+    }
+}
+
+private fun createMarkerIcon(marker: TornadoMarker): BitmapDrawable {
+    val size = 32
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+    paint.color = markerColor(marker)
+    val shape = marker.category?.shape ?: MarkerShape.CIRCLE
+
+    when (shape) {
+        MarkerShape.CIRCLE -> {
+            canvas.drawCircle(size / 2f, size / 2f, size / 2f - 2f, paint)
+        }
+        MarkerShape.DIAMOND -> {
+            val path = Path()
+            val cx = size / 2f
+            val cy = size / 2f
+            val r = size / 2f - 2f
+            path.moveTo(cx, cy - r)      // top
+            path.lineTo(cx + r, cy)       // right
+            path.lineTo(cx, cy + r)       // bottom
+            path.lineTo(cx - r, cy)       // left
+            path.close()
+            canvas.drawPath(path, paint)
+        }
+        MarkerShape.SQUARE -> {
+            val inset = 3f
+            canvas.drawRoundRect(inset, inset, size - inset, size - inset, 4f, 4f, paint)
+        }
+        MarkerShape.TRIANGLE -> {
+            val path = Path()
+            val inset = 2f
+            path.moveTo(size / 2f, inset)                    // top center
+            path.lineTo(size - inset, size - inset)           // bottom right
+            path.lineTo(inset, size - inset)                  // bottom left
+            path.close()
+            canvas.drawPath(path, paint)
         }
     }
-
-    canvas.drawCircle(size / 2f, size / 2f, size / 2f - 2f, paint)
 
     // Draw EF number or type initial
     paint.color = 0xFFFFFFFF.toInt()
     paint.textSize = 14f
     paint.textAlign = Paint.Align.CENTER
-    val text = marker.efRating?.removePrefix("EF") ?: marker.type.first().toString()
+    val text = marker.efRating?.removePrefix("EF") ?: marker.category?.key?.first()?.toString() ?: "?"
     val textY = size / 2f - (paint.descent() + paint.ascent()) / 2f
     canvas.drawText(text, size / 2f, textY, paint)
 

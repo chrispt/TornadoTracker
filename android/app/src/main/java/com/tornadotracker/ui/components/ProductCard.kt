@@ -25,11 +25,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.tornadotracker.domain.model.Category
 import com.tornadotracker.domain.model.NwsProduct
-import com.tornadotracker.ui.theme.PdsBannerBg
+import com.tornadotracker.ui.theme.MarkerDefault
 import com.tornadotracker.ui.theme.TextPrimary
 import com.tornadotracker.ui.theme.TextSecondary
-import com.tornadotracker.ui.theme.productTypeColor
 import java.time.Duration
 import java.time.Instant
 
@@ -47,7 +47,9 @@ fun ProductCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val typeColor = productTypeColor(product.productCode)
+    val cat = product.category
+    val badgeColor = cat?.color ?: MarkerDefault
+    val badgeLabel = cat?.label ?: product.productCode
     val office = extractOffice(product.issuingOffice)
     val subLabel = SUB_TYPE_LABELS[product.subType]
 
@@ -64,15 +66,15 @@ fun ProductCard(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.Top
         ) {
-            // Type badge
+            // Category badge
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(4.dp))
-                    .background(typeColor)
+                    .background(badgeColor)
                     .padding(horizontal = 6.dp, vertical = 3.dp)
             ) {
                 Text(
-                    text = product.productCode,
+                    text = badgeLabel,
                     color = Color.White,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
@@ -82,25 +84,17 @@ fun ProductCard(
             Spacer(modifier = Modifier.width(10.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = office,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
-                    )
-                    if (product.isPDS) {
-                        PdsBadge()
-                    }
-                }
+                Text(
+                    text = office,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
 
                 if (subLabel != null) {
                     Text(
                         text = subLabel,
                         fontSize = 12.sp,
-                        color = typeColor,
+                        color = badgeColor,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -123,23 +117,6 @@ fun ProductCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun PdsBadge() {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(3.dp))
-            .background(PdsBannerBg)
-            .padding(horizontal = 4.dp, vertical = 1.dp)
-    ) {
-        Text(
-            text = "PDS",
-            color = Color.White,
-            fontSize = 9.sp,
-            fontWeight = FontWeight.Bold
-        )
     }
 }
 

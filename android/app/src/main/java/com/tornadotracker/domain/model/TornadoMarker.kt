@@ -9,5 +9,6 @@ data class TornadoMarker(
     val county: String? = null,
     val pathLength: String? = null,
     val type: String,
+    val category: Category? = null,
     val polygon: List<LatLon>? = null
 )

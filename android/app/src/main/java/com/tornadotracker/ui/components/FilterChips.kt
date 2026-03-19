@@ -10,12 +10,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.tornadotracker.domain.model.ProductType
+import com.tornadotracker.domain.model.Category
 import com.tornadotracker.ui.theme.TextPrimary
 
 @Composable
 fun FilterChips(
-    selectedTypes: Set<String>,
+    selectedCategories: Set<String>,
     onToggle: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -23,14 +23,14 @@ fun FilterChips(
         modifier = modifier.padding(horizontal = 12.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        ProductType.entries.forEach { type ->
-            val selected = type.code in selectedTypes
+        Category.entries.forEach { cat ->
+            val selected = cat.key in selectedCategories
             FilterChip(
                 selected = selected,
-                onClick = { onToggle(type.code) },
-                label = { Text(type.code) },
+                onClick = { onToggle(cat.key) },
+                label = { Text(cat.label) },
                 colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = type.color.copy(alpha = 0.25f),
+                    selectedContainerColor = cat.color.copy(alpha = 0.25f),
                     selectedLabelColor = TextPrimary,
                     labelColor = TextPrimary.copy(alpha = 0.6f),
                     containerColor = Color.Transparent

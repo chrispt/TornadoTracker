@@ -31,7 +31,7 @@ fun FeedScreen(
     viewModel: FeedViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    val selectedTypes by viewModel.selectedTypes.collectAsState()
+    val selectedCategories by viewModel.selectedCategories.collectAsState()
     val stats = computeStats(state.products, state.markers)
 
     PullToRefreshBox(
@@ -45,8 +45,8 @@ fun FeedScreen(
         ) {
             item {
                 FilterChips(
-                    selectedTypes = selectedTypes,
-                    onToggle = { viewModel.toggleType(it) }
+                    selectedCategories = selectedCategories,
+                    onToggle = { viewModel.toggleCategory(it) }
                 )
             }
 

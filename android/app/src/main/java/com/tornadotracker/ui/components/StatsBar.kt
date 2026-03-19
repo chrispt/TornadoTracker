@@ -17,29 +17,26 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.tornadotracker.domain.model.Category
 import com.tornadotracker.domain.model.NwsProduct
 import com.tornadotracker.domain.model.TornadoMarker
-import com.tornadotracker.ui.theme.LsrColor
-import com.tornadotracker.ui.theme.PnsColor
 import com.tornadotracker.ui.theme.TextSecondary
-import com.tornadotracker.ui.theme.TorColor
 
 data class FeedStats(
     val total: Int = 0,
-    val pnsCount: Int = 0,
-    val torCount: Int = 0,
-    val lsrCount: Int = 0,
-    val pdsCount: Int = 0,
+    val categoryCounts: Map<Category, Int> = emptyMap(),
     val markerCount: Int = 0
 )
 
 fun computeStats(products: List<NwsProduct>, markers: List<TornadoMarker>): FeedStats {
+    val catCounts = mutableMapOf<Category, Int>()
+    products.forEach { p ->
+        val cat = p.category ?: return@forEach
+        catCounts[cat] = (catCounts[cat] ?: 0) + 1
+    }
     return FeedStats(
         total = products.size,
-        pnsCount = products.count { it.productCode == "PNS" },
-        torCount = products.count { it.productCode == "TOR" },
-        lsrCount = products.count { it.productCode == "LSR" },
-        pdsCount = products.count { it.isPDS },
+        categoryCounts = catCounts,
         markerCount = markers.size
     )
 }
@@ -61,12 +58,11 @@ fun StatsBar(stats: FeedStats, modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.onSurface
         )
 
-        StatDot(color = PnsColor, label = "${stats.pnsCount}")
-        StatDot(color = TorColor, label = "${stats.torCount}")
-        StatDot(color = LsrColor, label = "${stats.lsrCount}")
-
-        if (stats.pdsCount > 0) {
-            Text(text = "PDS:${stats.pdsCount}", fontSize = 11.sp, color = TorColor, fontWeight = FontWeight.Bold)
+        Category.entries.forEach { cat ->
+            val count = stats.categoryCounts[cat] ?: 0
+            if (count > 0) {
+                StatDot(color = cat.color, label = "$count")
+            }
         }
 
         if (stats.markerCount > 0) {

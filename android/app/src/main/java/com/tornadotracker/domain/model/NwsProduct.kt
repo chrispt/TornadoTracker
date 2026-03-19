@@ -7,5 +7,6 @@ data class NwsProduct(
     val issuingOffice: String,
     val issuanceTime: String,
     val subType: String? = null,
-    val isPDS: Boolean = false
+    val isPDS: Boolean = false,
+    val category: Category? = null
 )

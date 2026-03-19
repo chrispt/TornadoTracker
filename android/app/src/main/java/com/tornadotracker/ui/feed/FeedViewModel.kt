@@ -32,8 +32,8 @@ class FeedViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(FeedUiState())
     val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
 
-    val selectedTypes: StateFlow<Set<String>> = preferences.selectedTypes
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), setOf("PNS", "TOR", "LSR"))
+    val selectedCategories: StateFlow<Set<String>> = preferences.selectedCategories
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferences.ALL_CATEGORIES)
 
     init {
         refresh()
@@ -43,8 +43,8 @@ class FeedViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            val types = selectedTypes.value
-            val result = repository.fetchProducts(types)
+            val categories = selectedCategories.value
+            val result = repository.fetchProducts(categories)
             _uiState.value = FeedUiState(
                 products = result.products,
                 markers = result.markers,
@@ -54,11 +54,11 @@ class FeedViewModel @Inject constructor(
         }
     }
 
-    fun toggleType(code: String) {
+    fun toggleCategory(key: String) {
         viewModelScope.launch {
-            val current = selectedTypes.value.toMutableSet()
-            if (code in current) current.remove(code) else current.add(code)
-            preferences.setSelectedTypes(current)
+            val current = selectedCategories.value.toMutableSet()
+            if (key in current) current.remove(key) else current.add(key)
+            preferences.setSelectedCategories(current)
             refresh()
         }
     }

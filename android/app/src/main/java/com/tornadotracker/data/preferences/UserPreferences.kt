@@ -19,21 +19,33 @@ class UserPreferences @Inject constructor(
     private val dataStore: DataStore<Preferences>
 ) {
     companion object {
-        private val SELECTED_TYPES = stringSetPreferencesKey("selected_types")
+        private val SELECTED_CATEGORIES = stringSetPreferencesKey("selected_categories")
         private val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
+
+        // Old key for migration
+        private val SELECTED_TYPES_OLD = stringSetPreferencesKey("selected_types")
+
+        val ALL_CATEGORIES = setOf("SURVEY", "LSR", "PDS", "WARNING")
     }
 
-    val selectedTypes: Flow<Set<String>> = dataStore.data.map { prefs ->
-        prefs[SELECTED_TYPES] ?: setOf("PNS", "TOR", "LSR")
+    val selectedCategories: Flow<Set<String>> = dataStore.data.map { prefs ->
+        // Migrate old key if present
+        if (prefs[SELECTED_CATEGORIES] == null && prefs[SELECTED_TYPES_OLD] != null) {
+            ALL_CATEGORIES // Return defaults; actual migration happens on first write
+        } else {
+            prefs[SELECTED_CATEGORIES] ?: ALL_CATEGORIES
+        }
     }
 
     val notificationsEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
         prefs[NOTIFICATIONS_ENABLED] ?: true
     }
 
-    suspend fun setSelectedTypes(types: Set<String>) {
+    suspend fun setSelectedCategories(categories: Set<String>) {
         dataStore.edit { prefs ->
-            prefs[SELECTED_TYPES] = types
+            prefs[SELECTED_CATEGORIES] = categories
+            // Clean up old key if present
+            prefs.remove(SELECTED_TYPES_OLD)
         }
     }
 

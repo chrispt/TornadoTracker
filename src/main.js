@@ -8,6 +8,7 @@ import { fetchMultipleProductTypes } from './api/nwsProducts.js';
 import { fetchProductDetail } from './api/nwsProducts.js';
 import { parseProductText } from './utils/textParser.js';
 import { productCache } from './modules/productCache.js';
+import { PRODUCT_TYPES, SUB_TYPE_TO_CATEGORY } from './config/constants.js';
 
 import { initHeader } from './ui/header.js';
 import { initFeedView } from './ui/feedView.js';
@@ -45,14 +46,15 @@ const ALWAYS_TORNADO_TYPES = new Set(['TOR']);
 /** Types that need a content check to confirm tornado relevance */
 const NEEDS_CONTENT_CHECK_TYPES = new Set(['PNS', 'LSR']);
 
-async function refreshProducts() {
-  const types = store.get('selectedProductTypes');
-  if (!types || types.length === 0) return;
+/** All NWS types to always fetch */
+const ALL_NWS_TYPES = Object.keys(PRODUCT_TYPES);
 
+async function refreshProducts() {
   store.set('isLoading', true);
   store.set('error', null);
 
-  const { products, errors } = await fetchMultipleProductTypes(types, currentOffice);
+  // Always fetch all 3 NWS types regardless of category filter
+  const { products, errors } = await fetchMultipleProductTypes(ALL_NWS_TYPES, currentOffice);
 
   if (errors.length > 0) {
     const msg = errors.map(e => `${e.type}: ${e.error.message}`).join('; ');
@@ -60,18 +62,19 @@ async function refreshProducts() {
     console.warn('Fetch errors:', msg);
   }
 
-  // Filter to tornado-only and build markers in a single pass
-  const filtered = [];
+  // Filter to tornado-only, assign category, and build markers
+  const allTornado = [];
   const markers = [];
 
   const filterPromises = products.map(async (product) => {
     const code = product.productCode;
 
-    // TOR/LSR are always tornado-relevant
+    // TOR products are always tornado-relevant
     if (ALWAYS_TORNADO_TYPES.has(code)) {
       const cached = await fetchAndParseProduct(product);
       product._subType = cached?.parsedData?.subType || null;
       product._isPDS = cached?.parsedData?.isPDS || false;
+      product._category = SUB_TYPE_TO_CATEGORY[product._subType] || SUB_TYPE_TO_CATEGORY[code] || null;
       collectMarkers(markers, product, cached);
       return product;
     }
@@ -82,6 +85,7 @@ async function refreshProducts() {
       if (cached?.parsedData?.hasTornadoContent) {
         product._subType = cached?.parsedData?.subType || null;
         product._isPDS = cached?.parsedData?.isPDS || false;
+        product._category = SUB_TYPE_TO_CATEGORY[product._subType] || SUB_TYPE_TO_CATEGORY[code] || null;
         collectMarkers(markers, product, cached);
         return product;
       }
@@ -94,15 +98,20 @@ async function refreshProducts() {
   const results = await Promise.allSettled(filterPromises);
   results.forEach(r => {
     if (r.status === 'fulfilled' && r.value) {
-      filtered.push(r.value);
+      allTornado.push(r.value);
     }
   });
 
   // Re-sort since Promise.allSettled may resolve out of order
-  filtered.sort((a, b) => new Date(b.issuanceTime) - new Date(a.issuanceTime));
+  allTornado.sort((a, b) => new Date(b.issuanceTime) - new Date(a.issuanceTime));
+
+  // Client-side filter by selected categories
+  const selectedCats = store.get('selectedCategories');
+  const filtered = allTornado.filter(p => p._category && selectedCats.includes(p._category));
+  const filteredMarkers = markers.filter(m => selectedCats.includes(m.category));
 
   store.set('products', filtered);
-  store.set('tornadoMarkers', markers);
+  store.set('tornadoMarkers', filteredMarkers);
   store.set('lastFetchTime', new Date().toISOString());
   store.set('isLoading', false);
 }
@@ -144,6 +153,7 @@ function collectMarkers(markers, product, cached) {
         county: t.county,
         pathLength: t.pathLength,
         type: product.productCode,
+        category: product._category,
         polygon: t.polygon || null
       });
     }
@@ -229,7 +239,7 @@ function setupEventListeners() {
     refreshProducts();
   });
 
-  document.addEventListener('tt:types-changed', () => {
+  document.addEventListener('tt:categories-changed', () => {
     refreshProducts();
     startPolling(); // Reset polling timer
   });

@@ -9,19 +9,20 @@ const initialState = {
   searchFilters: { type: 'PNS', office: '', startDate: '', endDate: '', keyword: '' },
   tornadoMarkers: [],
   activeView: 'feed',
-  selectedProductTypes: ['PNS', 'TOR', 'LSR'],
+  selectedCategories: ['SURVEY', 'LSR', 'PDS', 'WARNING'],
   refreshInterval: DEFAULT_REFRESH_INTERVAL,
   isLoading: false,
   error: null,
   lastFetchTime: null
 };
 
-const PERSISTED_KEYS = ['selectedProductTypes', 'refreshInterval'];
+const PERSISTED_KEYS = ['selectedCategories', 'refreshInterval'];
 
 class Store {
   constructor() {
     this._state = { ...initialState };
     this._listeners = new Map();
+    this._migrateOldKeys();
     this._hydrateFromStorage();
   }
 
@@ -89,10 +90,21 @@ class Store {
     }
   }
 
+  /** Migrate old selectedProductTypes key to selectedCategories */
+  _migrateOldKeys() {
+    try {
+      const old = localStorage.getItem('tt_selectedProductTypes');
+      if (old) {
+        // Old key exists — remove it, use fresh category defaults
+        localStorage.removeItem('tt_selectedProductTypes');
+      }
+    } catch { /* ignore */ }
+  }
+
   _hydrateFromStorage() {
     try {
-      const types = localStorage.getItem(STORAGE_KEYS.SELECTED_PRODUCT_TYPES);
-      if (types) this._state.selectedProductTypes = JSON.parse(types);
+      const cats = localStorage.getItem(STORAGE_KEYS.SELECTED_CATEGORIES);
+      if (cats) this._state.selectedCategories = JSON.parse(cats);
     } catch { /* use default */ }
 
     try {
@@ -103,7 +115,11 @@ class Store {
 
   _persistToStorage(key, value) {
     try {
-      const storageKey = STORAGE_KEYS[key.replace(/([A-Z])/g, '_$1').toUpperCase()] || key;
+      const storageKey = key === 'selectedCategories'
+        ? STORAGE_KEYS.SELECTED_CATEGORIES
+        : key === 'refreshInterval'
+          ? STORAGE_KEYS.REFRESH_INTERVAL
+          : key;
       localStorage.setItem(storageKey, typeof value === 'string' ? value : JSON.stringify(value));
     } catch (e) {
       console.error(`Failed to persist "${key}":`, e);

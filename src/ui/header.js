@@ -1,9 +1,9 @@
 import store from '../state/store.js';
-import { PRODUCT_TYPES } from '../config/constants.js';
+import { CATEGORIES } from '../config/constants.js';
 import { formatDate } from '../utils/formatting.js';
 
 /**
- * Render the app header with title, product type filters, and refresh controls.
+ * Render the app header with title, category filters, and refresh controls.
  */
 export function initHeader() {
   const header = document.getElementById('app-header');
@@ -22,14 +22,13 @@ export function initHeader() {
     </div>
   `;
 
-  renderTypeFilters();
+  renderCategoryFilters();
 
   // Office filter
   const officeInput = document.getElementById('office-filter');
   officeInput.addEventListener('change', () => {
     const value = officeInput.value.trim().toUpperCase();
     officeInput.value = value;
-    // Dispatch custom event for main.js to handle
     document.dispatchEvent(new CustomEvent('tt:office-changed', { detail: value }));
   });
 
@@ -53,18 +52,19 @@ export function initHeader() {
   });
 }
 
-function renderTypeFilters() {
+function renderCategoryFilters() {
   const container = document.getElementById('type-filters');
   if (!container) return;
 
-  const selected = store.get('selectedProductTypes');
+  const selected = store.get('selectedCategories');
 
-  container.innerHTML = Object.entries(PRODUCT_TYPES).map(([code, info]) => {
-    const checked = selected.includes(code) ? 'checked' : '';
+  container.innerHTML = Object.entries(CATEGORIES).map(([key, cat]) => {
+    const checked = selected.includes(key) ? 'checked' : '';
     return `
       <label style="display:inline-flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;">
-        <input type="checkbox" value="${code}" ${checked} class="type-filter-cb" />
-        <span style="color:${info.color};font-weight:600;font-family:var(--font-mono);">${code}</span>
+        <input type="checkbox" value="${key}" ${checked} class="type-filter-cb" />
+        <span class="category-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${cat.color};"></span>
+        <span style="font-weight:500;">${cat.label}</span>
       </label>
     `;
   }).join('');
@@ -72,8 +72,8 @@ function renderTypeFilters() {
   container.addEventListener('change', () => {
     const checked = [...container.querySelectorAll('.type-filter-cb:checked')].map(cb => cb.value);
     if (checked.length > 0) {
-      store.set('selectedProductTypes', checked);
-      document.dispatchEvent(new CustomEvent('tt:types-changed', { detail: checked }));
+      store.set('selectedCategories', checked);
+      document.dispatchEvent(new CustomEvent('tt:categories-changed', { detail: checked }));
     }
   });
 }

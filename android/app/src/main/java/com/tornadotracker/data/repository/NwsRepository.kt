@@ -4,6 +4,7 @@ import com.tornadotracker.data.api.NwsApiService
 import com.tornadotracker.data.api.ProductDetailResponse
 import com.tornadotracker.data.api.ProductSummary
 import com.tornadotracker.data.cache.ProductCache
+import com.tornadotracker.domain.model.Category
 import com.tornadotracker.domain.model.NwsProduct
 import com.tornadotracker.domain.model.ParseResult
 import com.tornadotracker.domain.model.TornadoMarker
@@ -23,6 +24,8 @@ class NwsRepository @Inject constructor(
     companion object {
         private val ALWAYS_TORNADO_TYPES = setOf("TOR")
         private val NEEDS_CONTENT_CHECK = setOf("PNS", "LSR")
+        /** Always fetch all NWS types regardless of category filter */
+        private val ALL_NWS_TYPES = setOf("PNS", "TOR", "LSR")
     }
 
     data class FetchResult(
@@ -31,12 +34,15 @@ class NwsRepository @Inject constructor(
         val errors: List<String>
     )
 
-    suspend fun fetchProducts(types: Set<String>, office: String? = null): FetchResult = coroutineScope {
+    suspend fun fetchProducts(
+        selectedCategories: Set<String>,
+        office: String? = null
+    ): FetchResult = coroutineScope {
         val errors = mutableListOf<String>()
         val allSummaries = mutableListOf<ProductSummary>()
 
-        // Fetch product lists in parallel
-        val fetches = types.map { type ->
+        // Always fetch all 3 NWS types
+        val fetches = ALL_NWS_TYPES.map { type ->
             async {
                 try {
                     val response = api.getProducts(type, 50, office)
@@ -54,8 +60,8 @@ class NwsRepository @Inject constructor(
         allSummaries.sortByDescending { it.issuanceTime }
 
         // Filter to tornado-relevant and build markers
-        val filteredProducts = mutableListOf<NwsProduct>()
-        val markers = mutableListOf<TornadoMarker>()
+        val allProducts = mutableListOf<NwsProduct>()
+        val allMarkers = mutableListOf<TornadoMarker>()
 
         val filterJobs = allSummaries.map { summary ->
             async {
@@ -64,21 +70,22 @@ class NwsRepository @Inject constructor(
 
                     if (code in ALWAYS_TORNADO_TYPES) {
                         val (detail, parsed) = fetchAndParse(summary)
-                        val product = summary.toDomain(parsed?.subType, parsed?.isPDS ?: false)
-                        val productMarkers = collectMarkers(summary, parsed)
+                        val category = Category.fromSubType(parsed?.subType ?: code)
+                        val product = summary.toDomain(parsed?.subType, parsed?.isPDS ?: false, category)
+                        val productMarkers = collectMarkers(summary, parsed, category)
                         Triple(product, productMarkers, true)
                     } else if (code in NEEDS_CONTENT_CHECK) {
                         val (detail, parsed) = fetchAndParse(summary)
                         if (parsed?.hasTornadoContent == true) {
-                            val product = summary.toDomain(parsed.subType, parsed.isPDS)
-                            val productMarkers = collectMarkers(summary, parsed)
+                            val category = Category.fromSubType(parsed.subType ?: code)
+                            val product = summary.toDomain(parsed.subType, parsed.isPDS, category)
+                            val productMarkers = collectMarkers(summary, parsed, category)
                             Triple(product, productMarkers, true)
                         } else {
                             null
                         }
                     } else {
-                        val product = summary.toDomain(null, false)
-                        Triple(product, emptyList<TornadoMarker>(), true)
+                        null
                     }
                 } catch (e: Exception) {
                     null
@@ -87,14 +94,22 @@ class NwsRepository @Inject constructor(
         }
 
         filterJobs.awaitAll().filterNotNull().forEach { (product, productMarkers, _) ->
-            filteredProducts.add(product)
-            markers.addAll(productMarkers)
+            allProducts.add(product)
+            allMarkers.addAll(productMarkers)
         }
 
         // Re-sort
-        filteredProducts.sortByDescending { it.issuanceTime }
+        allProducts.sortByDescending { it.issuanceTime }
 
-        FetchResult(filteredProducts, markers, errors)
+        // Client-side filter by selected categories
+        val filteredProducts = allProducts.filter { p ->
+            p.category != null && p.category.key in selectedCategories
+        }
+        val filteredMarkers = allMarkers.filter { m ->
+            m.category != null && m.category.key in selectedCategories
+        }
+
+        FetchResult(filteredProducts, filteredMarkers, errors)
     }
 
     suspend fun fetchProductDetail(id: String): Pair<ProductDetailResponse?, ParseResult?> {
@@ -115,7 +130,11 @@ class NwsRepository @Inject constructor(
         return fetchProductDetail(summary.id)
     }
 
-    private fun collectMarkers(summary: ProductSummary, parsed: ParseResult?): List<TornadoMarker> {
+    private fun collectMarkers(
+        summary: ProductSummary,
+        parsed: ParseResult?,
+        category: Category?
+    ): List<TornadoMarker> {
         if (parsed?.tornadoes == null) return emptyList()
         return parsed.tornadoes.filter { it.lat != null && it.lon != null }.map { t ->
             TornadoMarker(
@@ -127,12 +146,13 @@ class NwsRepository @Inject constructor(
                 county = t.county,
                 pathLength = t.pathLength,
                 type = summary.productCode ?: "",
+                category = category,
                 polygon = t.polygon
             )
         }
     }
 
-    private fun ProductSummary.toDomain(subType: String?, isPDS: Boolean): NwsProduct {
+    private fun ProductSummary.toDomain(subType: String?, isPDS: Boolean, category: Category?): NwsProduct {
         return NwsProduct(
             id = id,
             productCode = productCode ?: "",
@@ -140,7 +160,8 @@ class NwsRepository @Inject constructor(
             issuingOffice = issuingOffice ?: "",
             issuanceTime = issuanceTime ?: "",
             subType = subType,
-            isPDS = isPDS
+            isPDS = isPDS,
+            category = category
         )
     }
 }

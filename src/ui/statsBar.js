@@ -1,5 +1,5 @@
 import store from '../state/store.js';
-import { PRODUCT_TYPES, EF_SCALE } from '../config/constants.js';
+import { CATEGORIES, EF_SCALE } from '../config/constants.js';
 
 /**
  * Initialize the stats bar — summary counts of products and tornado data.
@@ -16,15 +16,12 @@ function renderStats() {
   const products = store.get('products') || [];
   const markers = store.get('tornadoMarkers') || [];
 
-  // Count by product type
-  const typeCounts = {};
+  // Count by category
+  const catCounts = {};
   products.forEach(p => {
-    const code = p.productCode || 'UNK';
-    typeCounts[code] = (typeCounts[code] || 0) + 1;
+    const cat = p._category || 'UNKNOWN';
+    catCounts[cat] = (catCounts[cat] || 0) + 1;
   });
-
-  // Count PDS products
-  const pdsCount = products.filter(p => p._isPDS).length;
 
   // Count by EF rating from markers
   const efCounts = {};
@@ -41,29 +38,19 @@ function renderStats() {
     </div>
   `;
 
-  // Product type counts
-  Object.entries(typeCounts).forEach(([code, count]) => {
-    const info = PRODUCT_TYPES[code];
-    const color = info ? info.color : '#6b7280';
-    html += `
-      <div class="stats-bar__item">
-        <span class="stats-bar__dot" style="background:${color};"></span>
-        <span>${code}:</span>
-        <span class="stats-bar__value">${count}</span>
-      </div>
-    `;
+  // Category counts
+  Object.entries(CATEGORIES).forEach(([key, cat]) => {
+    const count = catCounts[key] || 0;
+    if (count > 0) {
+      html += `
+        <div class="stats-bar__item">
+          <span class="stats-bar__dot" style="background:${cat.color};"></span>
+          <span>${cat.label}:</span>
+          <span class="stats-bar__value">${count}</span>
+        </div>
+      `;
+    }
   });
-
-  // PDS count (only show when > 0)
-  if (pdsCount > 0) {
-    html += `
-      <div class="stats-bar__item">
-        <span class="stats-bar__dot" style="background:#dc2626;"></span>
-        <span>PDS:</span>
-        <span class="stats-bar__value">${pdsCount}</span>
-      </div>
-    `;
-  }
 
   // Tornado markers count
   if (markers.length > 0) {

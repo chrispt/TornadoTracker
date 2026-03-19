@@ -1,5 +1,5 @@
 import store from '../state/store.js';
-import { EF_SCALE, MARKER_COLORS } from '../config/constants.js';
+import { EF_SCALE, MARKER_COLORS, CATEGORIES } from '../config/constants.js';
 import { escapeHtml } from '../utils/formatting.js';
 
 let map = null;
@@ -97,6 +97,19 @@ function addTileToggleControl() {
 }
 
 /**
+ * Get the shape CSS class modifier for a category.
+ */
+function shapeClass(category) {
+  const shape = CATEGORIES[category]?.shape;
+  switch (shape) {
+    case 'diamond':  return 'tornado-marker__pin--diamond';
+    case 'square':   return 'tornado-marker__pin--square';
+    case 'triangle': return 'tornado-marker__pin--triangle';
+    default:         return '';
+  }
+}
+
+/**
  * Update map markers based on tornadoMarkers in store.
  */
 function updateMarkers() {
@@ -115,18 +128,20 @@ function updateMarkers() {
 
     bounds.push([m.lat, m.lon]);
 
-    // Determine color
+    // Determine color: EF rating takes priority, then category fallback
     let color;
     if (m.efRating && EF_SCALE[m.efRating]) {
       color = EF_SCALE[m.efRating].markerColor;
     } else {
-      color = MARKER_COLORS[m.type] || MARKER_COLORS.DEFAULT;
+      color = MARKER_COLORS[m.category] || MARKER_COLORS.DEFAULT;
     }
+
+    const extraClass = shapeClass(m.category);
 
     // Create marker with custom icon
     const icon = L.divIcon({
       className: 'tornado-marker',
-      html: `<div class="tornado-marker__pin" style="background:${color};box-shadow:0 0 12px ${color}80;">
+      html: `<div class="tornado-marker__pin ${extraClass}" style="background:${color};box-shadow:0 0 12px ${color}80;">
         ${m.efRating ? m.efRating.replace('EF', '') : '?'}
       </div>`,
       iconSize: [22, 22],
@@ -150,8 +165,9 @@ function updateMarkers() {
     // Draw polygon if available (TOR warnings)
     if (m.polygon && m.polygon.length >= 3) {
       const latlngs = m.polygon.map(p => [p.lat, p.lon]);
+      const polyColor = MARKER_COLORS[m.category] || MARKER_COLORS.WARNING;
       const poly = L.polygon(latlngs, {
-        color: MARKER_COLORS.TOR || '#a855f7',
+        color: polyColor,
         weight: 2,
         fillOpacity: 0.15,
         className: 'warning-polygon'
