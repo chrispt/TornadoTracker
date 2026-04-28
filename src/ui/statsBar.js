@@ -20,17 +20,21 @@ function renderStats() {
   const products = store.get('products') || [];
 
   const catCounts = {};
-  // Count radar status only on the live-alert pipeline (ALERT/EMERGENCY)
-  // categories. Otherwise we double-count: every active warning has both a
-  // /products/TOR entry (category WARNING/PDS) AND an /alerts/active entry
-  // (category ALERT/EMERGENCY) — same event, two records.
+  // Count radar status across all sources, but dedupe by content
+  // signature (office + issuance time, minute-truncated). The same NWS
+  // warning is published as both a /products/TOR entry (category
+  // WARNING/PDS) and an /alerts/active entry (category ALERT/EMERGENCY)
+  // with different IDs — without dedup we'd count it twice.
   let radarConfirmed = 0;
   let radarIndicated = 0;
+  const seenSig = new Set();
   products.forEach(p => {
     const cat = p._category || 'UNKNOWN';
     catCounts[cat] = (catCounts[cat] || 0) + 1;
-    const isAlertSource = cat === 'ALERT' || cat === 'EMERGENCY';
-    if (!isAlertSource) return;
+    if (!p._radarStatus) return;
+    const sig = `${p.issuingOffice || ''}::${(p.issuanceTime || '').slice(0, 16)}`;
+    if (seenSig.has(sig)) return;
+    seenSig.add(sig);
     if (p._radarStatus === 'CONFIRMED') radarConfirmed++;
     else if (p._radarStatus === 'INDICATED') radarIndicated++;
   });
