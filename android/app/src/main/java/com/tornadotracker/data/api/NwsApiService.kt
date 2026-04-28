@@ -17,4 +17,14 @@ interface NwsApiService {
     suspend fun getProduct(
         @Path("id") id: String
     ): ProductDetailResponse
+
+    /**
+     * Fetch currently-active tornado warnings as GeoJSON. Mirrors the web app's
+     * fetchActiveAlerts() — used to surface live warnings before the PNS/TOR
+     * polling loop catches up.
+     */
+    @GET("alerts/active")
+    suspend fun getActiveAlerts(
+        @Query("event") event: String = "Tornado Warning"
+    ): ActiveAlertsResponse
 }

@@ -1,4 +1,8 @@
-import { STORAGE_KEYS, DEFAULT_REFRESH_INTERVAL } from '../config/constants.js';
+import {
+  STORAGE_KEYS,
+  DEFAULT_REFRESH_INTERVAL,
+  DEFAULT_RADIUS_MILES
+} from '../config/constants.js';
 
 const initialState = {
   products: [],
@@ -8,14 +12,40 @@ const initialState = {
   searchResults: [],
   searchFilters: { type: 'PNS', office: '', startDate: '', endDate: '', keyword: '' },
   activeView: 'feed',
-  selectedCategories: ['SURVEY', 'LSR', 'PDS', 'WARNING'],
+  selectedCategories: ['SURVEY', 'LSR', 'PDS', 'WARNING', 'ALERT'],
   refreshInterval: DEFAULT_REFRESH_INTERVAL,
   isLoading: false,
   error: null,
-  lastFetchTime: null
+  lastFetchTime: null,
+  // New: saved locations (array) and selected location id (or null = all)
+  savedLocations: [],
+  activeLocationId: null,
+  radiusMiles: DEFAULT_RADIUS_MILES,
+  // New: ms timestamp of last user "seen" event — drives unseen badge
+  lastSeenAt: 0,
+  // New: map panel visibility
+  mapVisible: true,
+  // New: offline mode flag
+  isOffline: false
 };
 
-const PERSISTED_KEYS = ['selectedCategories', 'refreshInterval'];
+const PERSISTED_KEYS = [
+  'selectedCategories',
+  'refreshInterval',
+  'savedLocations',
+  'activeLocationId',
+  'radiusMiles',
+  'lastSeenAt'
+];
+
+const KEY_TO_STORAGE = {
+  selectedCategories: STORAGE_KEYS.SELECTED_CATEGORIES,
+  refreshInterval: STORAGE_KEYS.REFRESH_INTERVAL,
+  savedLocations: STORAGE_KEYS.SAVED_LOCATIONS,
+  activeLocationId: STORAGE_KEYS.ACTIVE_LOCATION,
+  radiusMiles: STORAGE_KEYS.RADIUS_MILES,
+  lastSeenAt: STORAGE_KEYS.LAST_SEEN_AT
+};
 
 class Store {
   constructor() {
@@ -89,37 +119,44 @@ class Store {
     }
   }
 
-  /** Migrate old selectedProductTypes key to selectedCategories */
   _migrateOldKeys() {
     try {
       const old = localStorage.getItem('tt_selectedProductTypes');
-      if (old) {
-        // Old key exists — remove it, use fresh category defaults
-        localStorage.removeItem('tt_selectedProductTypes');
-      }
+      if (old) localStorage.removeItem('tt_selectedProductTypes');
     } catch { /* ignore */ }
   }
 
   _hydrateFromStorage() {
-    try {
-      const cats = localStorage.getItem(STORAGE_KEYS.SELECTED_CATEGORIES);
-      if (cats) this._state.selectedCategories = JSON.parse(cats);
-    } catch { /* use default */ }
+    const tryParse = (storageKey, fallback) => {
+      try {
+        const v = localStorage.getItem(storageKey);
+        return v != null ? JSON.parse(v) : fallback;
+      } catch { return fallback; }
+    };
 
-    try {
-      const interval = localStorage.getItem(STORAGE_KEYS.REFRESH_INTERVAL);
-      if (interval) this._state.refreshInterval = Number(interval);
-    } catch { /* use default */ }
+    const cats = tryParse(STORAGE_KEYS.SELECTED_CATEGORIES, null);
+    if (Array.isArray(cats)) this._state.selectedCategories = cats;
+
+    const interval = tryParse(STORAGE_KEYS.REFRESH_INTERVAL, null);
+    if (typeof interval === 'number') this._state.refreshInterval = interval;
+
+    const locs = tryParse(STORAGE_KEYS.SAVED_LOCATIONS, null);
+    if (Array.isArray(locs)) this._state.savedLocations = locs;
+
+    const active = tryParse(STORAGE_KEYS.ACTIVE_LOCATION, null);
+    if (active === null || typeof active === 'string') this._state.activeLocationId = active;
+
+    const radius = tryParse(STORAGE_KEYS.RADIUS_MILES, null);
+    if (typeof radius === 'number') this._state.radiusMiles = radius;
+
+    const seen = tryParse(STORAGE_KEYS.LAST_SEEN_AT, null);
+    if (typeof seen === 'number') this._state.lastSeenAt = seen;
   }
 
   _persistToStorage(key, value) {
     try {
-      const storageKey = key === 'selectedCategories'
-        ? STORAGE_KEYS.SELECTED_CATEGORIES
-        : key === 'refreshInterval'
-          ? STORAGE_KEYS.REFRESH_INTERVAL
-          : key;
-      localStorage.setItem(storageKey, typeof value === 'string' ? value : JSON.stringify(value));
+      const storageKey = KEY_TO_STORAGE[key] || key;
+      localStorage.setItem(storageKey, JSON.stringify(value));
     } catch (e) {
       console.error(`Failed to persist "${key}":`, e);
     }

@@ -10,16 +10,18 @@ enum class Category(
     val label: String,
     val color: Color
 ) {
-    SURVEY("SURVEY", "Damage Surveys", Color(0xFF3B82F6)),
-    LSR("LSR", "Storm Reports", Color(0xFF8B5CF6)),
+    ALERT("ALERT", "Active Alerts", Color(0xFFF43F5E)),
+    WARNING("WARNING", "Tornado Warnings", Color(0xFFA855F7)),
     PDS("PDS", "PDS Warnings", Color(0xFFEF4444)),
-    WARNING("WARNING", "Tornado Warnings", Color(0xFFA855F7));
+    SURVEY("SURVEY", "Damage Surveys", Color(0xFF3B82F6)),
+    LSR("LSR", "Storm Reports", Color(0xFF8B5CF6));
 
     companion object {
         fun fromKey(key: String): Category? = entries.find { it.key == key }
 
         /** Map NWS sub-type to user-facing category */
         fun fromSubType(subType: String?): Category? = when (subType) {
+            "ALERT_TOR", "ALERT_TOR_PDS" -> ALERT
             "PNS_SURVEY", "PNS_TORNADO" -> SURVEY
             "LSR" -> LSR
             "TOR_PDS" -> PDS

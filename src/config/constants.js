@@ -10,19 +10,22 @@ export const PRODUCT_TYPES = {
 
 /** User-facing tornado categories */
 export const CATEGORIES = {
-  SURVEY:  { key: 'SURVEY',  label: 'Damage Surveys', color: '#3b82f6' },
-  LSR:     { key: 'LSR',     label: 'Storm Reports',  color: '#8b5cf6' },
-  PDS:     { key: 'PDS',     label: 'PDS Warnings',   color: '#ef4444' },
-  WARNING: { key: 'WARNING', label: 'Tornado Warnings', color: '#a855f7' }
+  ALERT:   { key: 'ALERT',   label: 'Active Alerts',   color: '#f43f5e' },
+  WARNING: { key: 'WARNING', label: 'Tornado Warnings', color: '#a855f7' },
+  PDS:     { key: 'PDS',     label: 'PDS Warnings',    color: '#ef4444' },
+  SURVEY:  { key: 'SURVEY',  label: 'Damage Surveys',  color: '#3b82f6' },
+  LSR:     { key: 'LSR',     label: 'Storm Reports',   color: '#8b5cf6' }
 };
 
 /** Map NWS sub-type → user-facing category */
 export const SUB_TYPE_TO_CATEGORY = {
-  PNS_SURVEY:  'SURVEY',
-  PNS_TORNADO: 'SURVEY',
-  LSR:         'LSR',
-  TOR_PDS:     'PDS',
-  TOR:         'WARNING'
+  ALERT_TOR:     'ALERT',
+  ALERT_TOR_PDS: 'ALERT',
+  PNS_SURVEY:    'SURVEY',
+  PNS_TORNADO:   'SURVEY',
+  LSR:           'LSR',
+  TOR_PDS:       'PDS',
+  TOR:           'WARNING'
 };
 
 /** EF Scale colors and labels */
@@ -38,21 +41,30 @@ export const EF_SCALE = {
 
 /** Sub-type labels for product cards */
 export const PRODUCT_SUB_TYPES = {
-  TOR:         'Tornado Warning',
-  TOR_PDS:     'PDS Tornado Warning',
-  PNS_SURVEY:  'NWS Damage Survey',
-  PNS_TORNADO: 'Tornado Report',
-  LSR:         'Local Storm Report',
+  ALERT_TOR:     'Active Tornado Warning',
+  ALERT_TOR_PDS: 'PDS Tornado Warning (Active)',
+  TOR:           'Tornado Warning',
+  TOR_PDS:       'PDS Tornado Warning',
+  PNS_SURVEY:    'NWS Damage Survey',
+  PNS_TORNADO:   'Tornado Report',
+  LSR:           'Local Storm Report'
 };
 
 /** localStorage keys */
 export const STORAGE_KEYS = {
   SELECTED_CATEGORIES: 'tt_selectedCategories',
-  REFRESH_INTERVAL: 'tt_refreshInterval'
+  REFRESH_INTERVAL: 'tt_refreshInterval',
+  SAVED_LOCATIONS: 'tt_savedLocations',
+  ACTIVE_LOCATION: 'tt_activeLocation',
+  RADIUS_MILES: 'tt_radiusMiles',
+  LAST_SEEN_AT: 'tt_lastSeenAt'
 };
 
 /** Default polling interval in ms */
 export const DEFAULT_REFRESH_INTERVAL = 120000;
+
+/** Default radius (miles) for "near me" filter */
+export const DEFAULT_RADIUS_MILES = 100;
 
 /** Product list fetch limit */
 export const PRODUCT_FETCH_LIMIT = 250;
@@ -62,3 +74,6 @@ export const CACHE_TTL = 30 * 60 * 1000;
 
 /** Maximum cache entries */
 export const CACHE_MAX_ENTRIES = 100;
+
+/** Prefix for alert-derived product IDs (no backing /products entry) */
+export const ALERT_ID_PREFIX = 'alert:';

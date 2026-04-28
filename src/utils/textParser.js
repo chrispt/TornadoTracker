@@ -1,3 +1,5 @@
+import { centroidOf } from './geo.js';
+
 /**
  * Parse NWS product text to extract structured tornado data.
  *
@@ -75,8 +77,9 @@ export function parseProductText(text, productType = 'PNS') {
  * Detect "Particularly Dangerous Situation" in product text.
  * NWS includes this phrase verbatim in PDS-level warnings.
  */
-function detectPDS(upperText) {
-  return upperText.includes('PARTICULARLY DANGEROUS SITUATION');
+export function detectPDS(text) {
+  if (!text) return false;
+  return text.toUpperCase().includes('PARTICULARLY DANGEROUS SITUATION');
 }
 
 /**
@@ -334,10 +337,7 @@ function parseTorWarning(text, isPDS = false) {
 
   const tornadoes = [];
   if (polygon.length > 0) {
-    const centroid = {
-      lat: polygon.reduce((s, p) => s + p.lat, 0) / polygon.length,
-      lon: polygon.reduce((s, p) => s + p.lon, 0) / polygon.length
-    };
+    const centroid = centroidOf(polygon);
 
     tornadoes.push({
       efRating: null,

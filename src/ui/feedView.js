@@ -8,18 +8,42 @@ export function initFeedView() {
   const container = document.getElementById('feed-container');
   if (!container) return;
 
-  // Full re-render only when the product list itself changes
   store.subscribe('products', renderFeed);
-  // Selection change: just toggle CSS classes instead of re-rendering everything
   store.subscribe('selectedProductId', updateSelection);
+  store.subscribe('lastSeenAt', renderFeed);
 
-  // Card click delegation
+  // Mark all as seen when the feed gains focus / scroll
+  let markedThisRender = false;
+  container.addEventListener('scroll', () => {
+    if (!markedThisRender) {
+      markSeen();
+      markedThisRender = true;
+    }
+  }, { passive: true });
+  // Also reset the gate when re-rendering
+  store.subscribe('products', () => { markedThisRender = false; });
+
   container.addEventListener('click', (e) => {
     const card = e.target.closest('.product-card');
     if (card) selectCard(card);
   });
 
-  // Keyboard navigation
+  // Document-level keyboard nav: j/k for next/prev like a mail client
+  document.addEventListener('keydown', (e) => {
+    if (isTypingInForm(e.target)) return;
+    if (e.key === 'j') { focusAdjacent(1); e.preventDefault(); }
+    else if (e.key === 'k') { focusAdjacent(-1); e.preventDefault(); }
+    else if (e.key === '/') { focusSearchTab(); e.preventDefault(); }
+    else if (e.key === 'Escape' && store.get('selectedProductDetail')) {
+      store.update({ selectedProductId: null, selectedProductDetail: null, parsedTornadoData: null });
+    } else if (e.key === 'r' && (e.metaKey || e.ctrlKey)) {
+      // leave Ctrl/Cmd-R alone for browser reload
+    } else if (e.key === 'r') {
+      document.dispatchEvent(new CustomEvent('tt:refresh-requested'));
+      e.preventDefault();
+    }
+  });
+
   container.addEventListener('keydown', (e) => {
     const card = e.target.closest('.product-card');
     if (!card) return;
@@ -37,6 +61,41 @@ export function initFeedView() {
       if (prev && prev.classList.contains('product-card')) prev.focus();
     }
   });
+}
+
+function isTypingInForm(el) {
+  if (!el) return false;
+  const tag = el.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+}
+
+function focusAdjacent(delta) {
+  const container = document.getElementById('feed-container');
+  if (!container) return;
+  const cards = [...container.querySelectorAll('.product-card')];
+  if (cards.length === 0) return;
+  const active = document.activeElement;
+  const idx = cards.indexOf(active);
+  const next = cards[Math.max(0, Math.min(cards.length - 1, idx + delta))] || cards[0];
+  next.focus();
+}
+
+function focusSearchTab() {
+  const tab = document.querySelector('.sidebar__tab[data-tab="search"]');
+  if (tab) tab.click();
+  setTimeout(() => document.getElementById('search-keyword')?.focus(), 50);
+}
+
+function markSeen() {
+  const products = store.get('products') || [];
+  if (products.length === 0) return;
+  const newest = products.reduce((max, p) => {
+    const t = p.issuanceTime ? new Date(p.issuanceTime).getTime() : 0;
+    return t > max ? t : max;
+  }, 0);
+  if (newest > store.get('lastSeenAt')) {
+    store.set('lastSeenAt', newest);
+  }
 }
 
 function selectCard(card) {
@@ -73,9 +132,10 @@ function renderFeed() {
     return;
   }
 
+  const lastSeenAt = store.get('lastSeenAt');
   container.innerHTML = `
     <div class="feed-list">
-      ${products.map(p => renderProductCard(p, p.id === selectedId)).join('')}
+      ${products.map(p => renderProductCard(p, p.id === selectedId, { lastSeenAt })).join('')}
     </div>
   `;
 }

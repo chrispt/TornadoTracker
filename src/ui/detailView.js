@@ -9,7 +9,7 @@ export function initDetailView() {
   store.subscribe('selectedProductDetail', renderDetail);
   store.subscribe('parsedTornadoData', renderDetail);
 
-  // Back button delegation
+  // Back / copy / share button delegation
   document.getElementById('detail-panel')?.addEventListener('click', (e) => {
     if (e.target.closest('.detail-view__back')) {
       store.update({
@@ -17,11 +17,48 @@ export function initDetailView() {
         selectedProductDetail: null,
         parsedTornadoData: null
       });
+    } else if (e.target.closest('.detail-view__copy')) {
+      copyText();
+    } else if (e.target.closest('.detail-view__share')) {
+      shareLink();
     }
   });
 
-  // Show empty state on init
   renderDetail();
+}
+
+async function copyText() {
+  const detail = store.get('selectedProductDetail');
+  if (!detail?.productText) return;
+  try {
+    await navigator.clipboard.writeText(detail.productText);
+    flash('Copied to clipboard');
+  } catch {
+    flash('Copy failed');
+  }
+}
+
+async function shareLink() {
+  const id = store.get('selectedProductId');
+  if (!id) return;
+  const url = `${location.origin}${location.pathname}#/p/${encodeURIComponent(id)}`;
+  if (navigator.share) {
+    try { await navigator.share({ title: 'TornadoTracker', url }); return; } catch {}
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    flash('Link copied');
+  } catch {
+    flash('Copy failed');
+  }
+}
+
+function flash(msg) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1800);
 }
 
 function renderDetail() {
@@ -45,12 +82,18 @@ function renderDetail() {
   const time = formatDate(detail.issuanceTime);
 
   let pdsBannerHtml = '';
-  if (parsed && parsed.isPDS) {
+  if ((parsed && parsed.isPDS) || detail._alert?.severity === 'Extreme') {
     pdsBannerHtml = `
       <div class="detail-view__pds-banner">
-        Particularly Dangerous Situation
+        ${detail._isPDS || parsed?.isPDS ? 'Particularly Dangerous Situation' : 'Extreme Severity'}
       </div>
     `;
+  }
+
+  // Active alert: render alert payload directly
+  let alertHtml = '';
+  if (detail._alert) {
+    alertHtml = renderAlert(detail._alert);
   }
 
   let highlightsHtml = '';
@@ -72,14 +115,47 @@ function renderDetail() {
       <div class="detail-view__header">
         <button class="btn btn--ghost btn--sm detail-view__back">&larr; Back</button>
         <div class="detail-view__title">${escapeHtml(detail.productName || type)}</div>
+        <div class="detail-view__actions">
+          <button class="btn btn--ghost btn--sm detail-view__share" title="Share link">Share</button>
+          ${detail.productText ? `<button class="btn btn--ghost btn--sm detail-view__copy" title="Copy text">Copy</button>` : ''}
+        </div>
       </div>
       <div class="detail-view__meta">
         <span>${type} &middot; ${office}</span>
         <span>${time}</span>
       </div>
       ${pdsBannerHtml}
+      ${alertHtml}
       ${highlightsHtml}
-      <div class="detail-view__raw">${escapeHtml(detail.productText || 'No text available.')}</div>
+      ${detail.productText ? `<div class="detail-view__raw">${escapeHtml(detail.productText)}</div>` : ''}
+    </div>
+  `;
+}
+
+function renderAlert(alert) {
+  const fields = [
+    { label: 'Severity', value: alert.severity },
+    { label: 'Certainty', value: alert.certainty },
+    { label: 'Urgency', value: alert.urgency },
+    { label: 'Onset', value: alert.onset ? formatDate(alert.onset) : null },
+    { label: 'Expires', value: alert.expires ? formatDate(alert.expires) : null }
+  ].filter(f => f.value);
+
+  return `
+    <div class="tornado-highlights">
+      <div class="tornado-highlights__title">Active Tornado Warning</div>
+      ${alert.headline ? `<p style="font-weight:600;margin-bottom:var(--space-xs);">${escapeHtml(alert.headline)}</p>` : ''}
+      ${alert.areaDesc ? `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--space-sm);">${escapeHtml(alert.areaDesc)}</p>` : ''}
+      <div class="tornado-highlights__grid">
+        ${fields.map(f => `
+          <div class="tornado-highlights__item">
+            <span class="tornado-highlights__label">${f.label}</span>
+            <span class="tornado-highlights__value">${escapeHtml(f.value)}</span>
+          </div>
+        `).join('')}
+      </div>
+      ${alert.description ? `<p style="margin-top:var(--space-sm);font-size:13px;line-height:1.5;white-space:pre-wrap;">${escapeHtml(alert.description)}</p>` : ''}
+      ${alert.instruction ? `<p style="margin-top:var(--space-sm);font-size:13px;line-height:1.5;font-weight:500;color:var(--danger);">${escapeHtml(alert.instruction)}</p>` : ''}
     </div>
   `;
 }

@@ -13,8 +13,12 @@ export function initHeader() {
     <div class="app-header__title">TornadoTracker</div>
     <div class="app-header__controls">
       <div class="app-header__filters" id="type-filters"></div>
+      <div id="locations-host"></div>
       <input type="text" id="office-filter" placeholder="Office (e.g. KBMX)"
         style="width:130px;" title="Filter by NWS office code" />
+      <button class="btn btn--ghost btn--sm" id="map-toggle-btn" title="Toggle map">
+        Map
+      </button>
       <button class="btn btn--primary btn--sm" id="refresh-btn" title="Refresh now">
         Refresh
       </button>
@@ -35,6 +39,15 @@ export function initHeader() {
   // Refresh button
   document.getElementById('refresh-btn').addEventListener('click', () => {
     document.dispatchEvent(new CustomEvent('tt:refresh-requested'));
+  });
+
+  // Map toggle
+  document.getElementById('map-toggle-btn').addEventListener('click', () => {
+    const visible = !store.get('mapVisible');
+    store.set('mapVisible', visible);
+    const panel = document.getElementById('map-panel-wrapper');
+    if (panel) panel.classList.toggle('hidden', !visible);
+    document.dispatchEvent(new CustomEvent('tt:map-toggled', { detail: visible }));
   });
 
   // Update status on fetch

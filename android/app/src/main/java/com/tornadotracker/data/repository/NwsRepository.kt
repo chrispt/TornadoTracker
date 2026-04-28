@@ -1,10 +1,13 @@
 package com.tornadotracker.data.repository
 
+import com.tornadotracker.data.api.AlertFeature
 import com.tornadotracker.data.api.NwsApiService
 import com.tornadotracker.data.api.ProductDetailResponse
 import com.tornadotracker.data.api.ProductSummary
 import com.tornadotracker.data.cache.ProductCache
+import com.tornadotracker.domain.model.AlertPayload
 import com.tornadotracker.domain.model.Category
+import com.tornadotracker.domain.model.LatLon
 import com.tornadotracker.domain.model.NwsProduct
 import com.tornadotracker.domain.model.ParseResult
 import com.tornadotracker.domain.parser.NwsTextParser
@@ -111,6 +114,78 @@ class NwsRepository @Inject constructor(
                 }.awaitAll().filterNotNull()
             }
             batchResults.forEach { product -> emit(product) }
+        }
+    }
+
+    /**
+     * Fetch currently-active tornado warnings and adapt them into NwsProduct
+     * shape so they can flow through the same feed pipeline as PNS/TOR/LSR.
+     */
+    suspend fun fetchActiveAlerts(): List<NwsProduct> {
+        return try {
+            val response = api.getActiveAlerts()
+            response.features.mapNotNull { feature -> featureToProduct(feature) }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun featureToProduct(feature: AlertFeature): NwsProduct? {
+        val props = feature.properties ?: return null
+        val isPds = listOfNotNull(props.description, props.headline)
+            .any { it.contains("PARTICULARLY DANGEROUS SITUATION", ignoreCase = true) }
+        val subType = if (isPds) "ALERT_TOR_PDS" else "ALERT_TOR"
+        val polygon = extractPolygon(feature.geometry)
+        val centroid = polygon.takeIf { it.isNotEmpty() }?.let {
+            LatLon(it.sumOf { p -> p.lat } / it.size, it.sumOf { p -> p.lon } / it.size)
+        }
+        val id = "alert:${props.id ?: feature.id ?: return null}"
+
+        return NwsProduct(
+            id = id,
+            productCode = "TOR",
+            productName = props.headline ?: "Tornado Warning",
+            issuingOffice = props.senderName ?: "",
+            issuanceTime = props.sent ?: props.effective ?: "",
+            subType = subType,
+            isPDS = isPds,
+            category = Category.ALERT,
+            alert = AlertPayload(
+                headline = props.headline,
+                description = props.description,
+                instruction = props.instruction,
+                areaDesc = props.areaDesc,
+                severity = props.severity,
+                certainty = props.certainty,
+                urgency = props.urgency,
+                onset = props.onset,
+                expires = props.expires,
+                polygon = polygon,
+                centroid = centroid
+            )
+        )
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun extractPolygon(geom: com.tornadotracker.data.api.AlertGeometry?): List<LatLon> {
+        if (geom?.coordinates == null) return emptyList()
+        // Polygon: [[[lon, lat], ...]]
+        // MultiPolygon: [[[[lon, lat], ...]]]  — we take the first ring
+        return try {
+            val ring: List<List<Double>> = when (geom.type) {
+                "Polygon" -> {
+                    val coords = geom.coordinates as List<List<List<Double>>>
+                    coords.firstOrNull() ?: return emptyList()
+                }
+                "MultiPolygon" -> {
+                    val coords = geom.coordinates as List<List<List<List<Double>>>>
+                    coords.firstOrNull()?.firstOrNull() ?: return emptyList()
+                }
+                else -> return emptyList()
+            }
+            ring.map { pair -> LatLon(pair[1], pair[0]) }
+        } catch (e: Exception) {
+            emptyList()
         }
     }
 

@@ -41,6 +41,7 @@ class FeedViewModel @Inject constructor(
     init {
         refresh()
         startPolling()
+        startAlertsPolling()
     }
 
     fun refresh() {
@@ -50,8 +51,9 @@ class FeedViewModel @Inject constructor(
             val result = repository.fetchProductsImmediate()
 
             // Stage 1: Show TOR products immediately
-            allTornadoProducts.clear()
+            allTornadoProducts.removeAll { it.category?.key != "ALERT" }
             allTornadoProducts.addAll(result.torProducts)
+            allTornadoProducts.sortByDescending { it.issuanceTime }
             applyFilterAndUpdateState(error = result.errors.firstOrNull())
             _uiState.value = _uiState.value.copy(isLoading = false)
 
@@ -60,7 +62,6 @@ class FeedViewModel @Inject constructor(
                 repository.fetchProductsBackground(result.allSummaries).collect { product ->
                     val existing = allTornadoProducts.indexOfFirst { it.id == product.id }
                     if (existing >= 0) {
-                        // Back-fill: update existing TOR product (e.g., upgrade to PDS)
                         allTornadoProducts[existing] = product
                     } else {
                         allTornadoProducts.add(product)
@@ -68,6 +69,28 @@ class FeedViewModel @Inject constructor(
                     allTornadoProducts.sortByDescending { it.issuanceTime }
                     applyFilterAndUpdateState()
                 }
+            }
+        }
+    }
+
+    /** Refresh active alerts from /alerts/active. */
+    private fun refreshAlerts() {
+        viewModelScope.launch {
+            val alerts = repository.fetchActiveAlerts()
+            // Replace existing alerts with the latest snapshot
+            allTornadoProducts.removeAll { it.category?.key == "ALERT" }
+            allTornadoProducts.addAll(alerts)
+            allTornadoProducts.sortByDescending { it.issuanceTime }
+            applyFilterAndUpdateState()
+        }
+    }
+
+    private fun startAlertsPolling() {
+        viewModelScope.launch {
+            refreshAlerts()
+            while (true) {
+                delay(30_000) // 30s — alerts cadence
+                refreshAlerts()
             }
         }
     }
