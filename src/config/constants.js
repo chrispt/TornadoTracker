@@ -8,24 +8,30 @@ export const PRODUCT_TYPES = {
   LSR: { code: 'LSR', label: 'Local Storm Report', color: '#8b5cf6' }
 };
 
-/** User-facing tornado categories */
+/** User-facing tornado categories — ordered by severity for the UI. */
 export const CATEGORIES = {
-  ALERT:   { key: 'ALERT',   label: 'Active Alerts',   color: '#f43f5e' },
-  WARNING: { key: 'WARNING', label: 'Tornado Warnings', color: '#a855f7' },
-  PDS:     { key: 'PDS',     label: 'PDS Warnings',    color: '#ef4444' },
-  SURVEY:  { key: 'SURVEY',  label: 'Damage Surveys',  color: '#3b82f6' },
-  LSR:     { key: 'LSR',     label: 'Storm Reports',   color: '#8b5cf6' }
+  EMERGENCY: { key: 'EMERGENCY', label: 'Tornado Emergency', color: '#dc2626' },
+  ALERT:     { key: 'ALERT',     label: 'Active Alerts',     color: '#f43f5e' },
+  WATCH:     { key: 'WATCH',     label: 'Tornado Watches',   color: '#f59e0b' },
+  WARNING:   { key: 'WARNING',   label: 'Tornado Warnings',  color: '#a855f7' },
+  PDS:       { key: 'PDS',       label: 'PDS Warnings',      color: '#ef4444' },
+  SURVEY:    { key: 'SURVEY',    label: 'Damage Surveys',    color: '#3b82f6' },
+  LSR:       { key: 'LSR',       label: 'Storm Reports',     color: '#8b5cf6' }
 };
 
 /** Map NWS sub-type → user-facing category */
 export const SUB_TYPE_TO_CATEGORY = {
-  ALERT_TOR:     'ALERT',
-  ALERT_TOR_PDS: 'ALERT',
-  PNS_SURVEY:    'SURVEY',
-  PNS_TORNADO:   'SURVEY',
-  LSR:           'LSR',
-  TOR_PDS:       'PDS',
-  TOR:           'WARNING'
+  ALERT_TOR_EMERGENCY: 'EMERGENCY',
+  TOR_EMERGENCY:       'EMERGENCY',
+  ALERT_TOR_PDS:       'ALERT',
+  ALERT_TOR:           'ALERT',
+  WATCH_TOR_PDS:       'WATCH',
+  WATCH_TOR:           'WATCH',
+  PNS_SURVEY:          'SURVEY',
+  PNS_TORNADO:         'SURVEY',
+  LSR:                 'LSR',
+  TOR_PDS:             'PDS',
+  TOR:                 'WARNING'
 };
 
 /** EF Scale colors and labels */
@@ -41,23 +47,28 @@ export const EF_SCALE = {
 
 /** Sub-type labels for product cards */
 export const PRODUCT_SUB_TYPES = {
-  ALERT_TOR:     'Active Tornado Warning',
-  ALERT_TOR_PDS: 'PDS Tornado Warning (Active)',
-  TOR:           'Tornado Warning',
-  TOR_PDS:       'PDS Tornado Warning',
-  PNS_SURVEY:    'NWS Damage Survey',
-  PNS_TORNADO:   'Tornado Report',
-  LSR:           'Local Storm Report'
+  ALERT_TOR_EMERGENCY: 'Active Tornado Emergency',
+  TOR_EMERGENCY:       'Tornado Emergency',
+  ALERT_TOR_PDS:       'PDS Tornado Warning (Active)',
+  ALERT_TOR:           'Active Tornado Warning',
+  WATCH_TOR_PDS:       'PDS Tornado Watch',
+  WATCH_TOR:           'Tornado Watch',
+  TOR:                 'Tornado Warning',
+  TOR_PDS:             'PDS Tornado Warning',
+  PNS_SURVEY:          'NWS Damage Survey',
+  PNS_TORNADO:         'Tornado Report',
+  LSR:                 'Local Storm Report'
 };
 
 /** localStorage keys */
 export const STORAGE_KEYS = {
   SELECTED_CATEGORIES: 'tt_selectedCategories',
-  REFRESH_INTERVAL: 'tt_refreshInterval',
-  SAVED_LOCATIONS: 'tt_savedLocations',
-  ACTIVE_LOCATION: 'tt_activeLocation',
-  RADIUS_MILES: 'tt_radiusMiles',
-  LAST_SEEN_AT: 'tt_lastSeenAt'
+  REFRESH_INTERVAL:    'tt_refreshInterval',
+  SAVED_LOCATIONS:     'tt_savedLocations',
+  ACTIVE_LOCATION:     'tt_activeLocation',
+  RADIUS_MILES:        'tt_radiusMiles',
+  LAST_SEEN_AT:        'tt_lastSeenAt',
+  RADAR_VISIBLE:       'tt_radarVisible'
 };
 
 /** Default polling interval in ms */

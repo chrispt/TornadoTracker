@@ -1,10 +1,13 @@
 /**
- * Map view — renders TOR warning polygons, PNS tracks, LSR points, and
- * active alert polygons on a single Leaflet map.
+ * Map view — renders TOR warning polygons, PNS tracks, LSR points, alert
+ * polygons (warnings + watches + emergencies), and an optional NEXRAD
+ * radar overlay on a single Leaflet map.
  *
- * The map subscribes to `products` and re-renders incrementally. Selection
- * is bidirectional: clicking a marker selects the product, and selecting
- * from the feed pans/zooms the map.
+ * Z-order (bottom → top):
+ *   base tiles → radar tiles → alert/feature layers
+ *
+ * Selection is bidirectional: clicking a marker selects the product, and
+ * selecting from the feed pans/zooms the map.
  */
 import L from 'leaflet';
 import store from '../state/store.js';
@@ -14,12 +17,18 @@ import { getActiveLocation } from './locationsView.js';
 
 let map = null;
 let layerGroup = null;
+let radarLayer = null;
 let radiusLayer = null;
 let hasFitOnce = false;
 const markersById = new Map();
 
 const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_ATTR = '© OpenStreetMap';
+
+// NEXRAD CONUS reflectivity (N0Q product) via Iowa Environmental Mesonet's
+// public tile cache. Updates every ~5 min; reliable academic source.
+const NEXRAD_TILE_URL = 'https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png';
+const NEXRAD_ATTR = 'NEXRAD radar via <a href="https://mesonet.agron.iastate.edu/" target="_blank" rel="noopener">Iowa Environmental Mesonet</a>';
 
 export function initMapView() {
   const container = document.getElementById('map-panel');
@@ -33,10 +42,14 @@ export function initMapView() {
   L.tileLayer(TILE_URL, { attribution: TILE_ATTR, maxZoom: 12 }).addTo(map);
   layerGroup = L.layerGroup().addTo(map);
 
+  applyRadarVisibility();
+  addRadarControl();
+
   store.subscribe('products', renderMap);
   store.subscribe('selectedProductId', focusSelected);
   store.subscribe('activeLocationId', renderRadius);
   store.subscribe('radiusMiles', renderRadius);
+  store.subscribe('radarVisible', applyRadarVisibility);
 
   document.addEventListener('tt:map-toggled', () => {
     setTimeout(() => map.invalidateSize(), 50);
@@ -54,10 +67,14 @@ function renderMap() {
 
   const products = store.get('products') || [];
 
+  // Z-order: watches first (background), then warnings/PDS/alerts, then
+  // emergencies (top). Surveys/LSR points last so they're clickable above.
+  const sorted = [...products].sort((a, b) => layerOrder(a) - layerOrder(b));
+
   const bounds = L.latLngBounds([]);
   let added = 0;
 
-  products.forEach(item => {
+  sorted.forEach(item => {
     const layer = buildLayerFor(item);
     if (!layer) return;
     layer.addTo(layerGroup);
@@ -71,11 +88,26 @@ function renderMap() {
     }
   });
 
-  // Only auto-fit on first render with data — after that, leave the user's
-  // pan/zoom alone. Selection still drives focusSelected().
   if (!hasFitOnce && added > 0 && bounds.isValid()) {
     map.fitBounds(bounds.pad(0.1), { animate: false, maxZoom: 8 });
     hasFitOnce = true;
+  }
+}
+
+/**
+ * Render priority — lower numbers render first (bottom of the stack).
+ * Watches are background context; emergencies should be drawn on top.
+ */
+function layerOrder(item) {
+  switch (item._category) {
+    case 'WATCH':     return 0;
+    case 'WARNING':   return 1;
+    case 'PDS':       return 2;
+    case 'ALERT':     return 3;
+    case 'EMERGENCY': return 4;
+    case 'SURVEY':    return 5;
+    case 'LSR':       return 6;
+    default:          return 1;
   }
 }
 
@@ -84,9 +116,29 @@ function buildLayerFor(item) {
     ? CATEGORIES[item._category].color
     : '#6b7280';
 
-  // Active alert: polygon
+  // Watch (broad multi-county polygon) — distinct dashed amber outline
+  if (item._category === 'WATCH' && item._alert?.polygon?.length) {
+    return polygonLayer(item, item._alert.polygon, color, {
+      weight: 1.5,
+      dashArray: '6,6',
+      fillOpacity: 0.05
+    });
+  }
+
+  // Active emergency — heavier stroke + higher fill opacity
+  if (item._category === 'EMERGENCY' && item._alert?.polygon?.length) {
+    return polygonLayer(item, item._alert.polygon, color, {
+      weight: 3,
+      fillOpacity: 0.4
+    });
+  }
+
+  // Active warning / PDS warning
   if (item._alert?.polygon?.length) {
-    return polygonLayer(item, item._alert.polygon, color, item._isPDS ? 0.35 : 0.2);
+    return polygonLayer(item, item._alert.polygon, color, {
+      weight: 2,
+      fillOpacity: item._isPDS ? 0.35 : 0.2
+    });
   }
 
   // Cached parsed data — re-fetch from in-memory cache
@@ -96,16 +148,17 @@ function buildLayerFor(item) {
   // TOR warning with polygon
   const torWithPoly = tornadoes.find(t => t.polygon?.length);
   if (torWithPoly) {
-    return polygonLayer(item, torWithPoly.polygon, color, item._isPDS ? 0.35 : 0.15);
+    return polygonLayer(item, torWithPoly.polygon, color, {
+      weight: 2,
+      fillOpacity: item._isPDS ? 0.35 : 0.15
+    });
   }
 
-  // PNS damage survey with start/end track
   const trackTornado = tornadoes.find(t => t.startLat != null && t.endLat != null);
   if (trackTornado) {
     return trackLayer(item, trackTornado, color);
   }
 
-  // Single-point: parsed lat/lon, or no parse but has lat from any source
   const point = tornadoes.find(t => t.lat != null);
   if (point) {
     return pointLayer(item, point.lat, point.lon, color);
@@ -114,10 +167,14 @@ function buildLayerFor(item) {
   return null;
 }
 
-function polygonLayer(item, polygon, color, fillOpacity) {
+function polygonLayer(item, polygon, color, opts = {}) {
   const latLngs = polygon.map(p => [p.lat, p.lon]);
   const layer = L.polygon(latLngs, {
-    color, weight: 2, fillColor: color, fillOpacity
+    color,
+    weight: opts.weight ?? 2,
+    fillColor: color,
+    fillOpacity: opts.fillOpacity ?? 0.2,
+    dashArray: opts.dashArray
   });
   bindClick(layer, item);
   return layer;
@@ -128,7 +185,6 @@ function trackLayer(item, t, color) {
     [[t.startLat, t.startLon], [t.endLat, t.endLon]],
     { color, weight: 4, opacity: 0.85 }
   );
-  // Attach start marker as an icon for clicking
   const start = L.circleMarker([t.startLat, t.startLon], {
     color, fillColor: color, fillOpacity: 0.9, weight: 1, radius: 6
   });
@@ -183,4 +239,62 @@ function renderRadius() {
     fillColor: '#0ea5e9',
     fillOpacity: 0.05
   }).addTo(map);
+}
+
+// ── Radar overlay ─────────────────────────────────────────────────────
+
+function applyRadarVisibility() {
+  if (!map) return;
+  const visible = !!store.get('radarVisible');
+  if (visible && !radarLayer) {
+    radarLayer = L.tileLayer(NEXRAD_TILE_URL, {
+      attribution: NEXRAD_ATTR,
+      opacity: 0.6,
+      maxZoom: 12,
+      updateWhenIdle: true
+    });
+    radarLayer.addTo(map);
+    // Keep the radar below the alert/feature layers
+    if (radarLayer.getContainer) {
+      const el = radarLayer.getContainer();
+      if (el) el.style.zIndex = 250;
+    }
+  } else if (!visible && radarLayer) {
+    map.removeLayer(radarLayer);
+    radarLayer = null;
+  }
+  refreshRadarControl();
+}
+
+function addRadarControl() {
+  const RadarControl = L.Control.extend({
+    options: { position: 'topright' },
+    onAdd() {
+      const btn = L.DomUtil.create('button', 'leaflet-bar leaflet-control radar-toggle');
+      btn.type = 'button';
+      btn.title = 'Toggle NEXRAD radar';
+      btn.setAttribute('aria-pressed', String(!!store.get('radarVisible')));
+      btn.textContent = 'Radar';
+      L.DomEvent.on(btn, 'click', (e) => {
+        L.DomEvent.stopPropagation(e);
+        const next = !store.get('radarVisible');
+        store.set('radarVisible', next);
+      });
+      this._btn = btn;
+      return btn;
+    }
+  });
+  const ctrl = new RadarControl();
+  ctrl.addTo(map);
+  // Stash the button so refreshRadarControl can update aria-pressed
+  map._radarControlBtn = ctrl._btn;
+  refreshRadarControl();
+}
+
+function refreshRadarControl() {
+  const btn = map?._radarControlBtn;
+  if (!btn) return;
+  const visible = !!store.get('radarVisible');
+  btn.setAttribute('aria-pressed', String(visible));
+  btn.classList.toggle('radar-toggle--on', visible);
 }

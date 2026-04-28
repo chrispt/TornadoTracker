@@ -23,12 +23,14 @@ export function renderProductCard(product, isSelected = false, opts = {}) {
   const issuedMs = product.issuanceTime ? new Date(product.issuanceTime).getTime() : 0;
   const isNew = opts.lastSeenAt && issuedMs > opts.lastSeenAt;
   const newClass = isNew ? 'product-card--new' : '';
+  const emergencyClass = product._category === 'EMERGENCY' ? 'product-card--emergency' : '';
+  const watchClass = product._category === 'WATCH' ? 'product-card--watch' : '';
 
   const namePart = product._eventName ? `, ${product._eventName}` : '';
   const ariaLabel = `${badgeLabel} from ${office}${namePart}, ${time}${isNew ? ', new' : ''}`;
 
   return `
-    <div class="product-card ${selectedClass} ${newClass}" data-product-id="${escapeHtml(product.id)}" tabindex="0" role="article" aria-label="${escapeHtml(ariaLabel)}">
+    <div class="product-card ${selectedClass} ${newClass} ${emergencyClass} ${watchClass}" data-product-id="${escapeHtml(product.id)}" tabindex="0" role="article" aria-label="${escapeHtml(ariaLabel)}">
       <span class="product-card__type-badge" style="background:${badgeColor};">${escapeHtml(badgeLabel)}</span>
       ${isNew ? '<span class="product-card__new-dot" aria-hidden="true"></span>' : ''}
       <div class="product-card__body">

@@ -25,7 +25,7 @@ class UserPreferences @Inject constructor(
         // Old key for migration
         private val SELECTED_TYPES_OLD = stringSetPreferencesKey("selected_types")
 
-        val ALL_CATEGORIES = setOf("ALERT", "SURVEY", "LSR", "PDS", "WARNING")
+        val ALL_CATEGORIES = setOf("EMERGENCY", "ALERT", "WATCH", "WARNING", "PDS", "SURVEY", "LSR")
     }
 
     val selectedCategories: Flow<Set<String>> = dataStore.data.map { prefs ->

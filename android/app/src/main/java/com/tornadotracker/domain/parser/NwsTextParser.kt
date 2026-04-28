@@ -21,9 +21,10 @@ class NwsTextParser @Inject constructor() {
 
         val upperText = text.uppercase()
         val isPDS = detectPDS(upperText)
+        val isEmergency = detectEmergency(upperText)
 
         return when (productType) {
-            "TOR" -> parseTorWarning(text, isPDS)
+            "TOR" -> parseTorWarning(text, isPDS, isEmergency)
             "LSR" -> parseLSR(text)
             else -> parsePNS(text, upperText, isPDS)
         }
@@ -84,7 +85,7 @@ class NwsTextParser @Inject constructor() {
         "wisconsin" to "WI","wyoming" to "WY"
     )
 
-    private fun parseTorWarning(text: String, isPDS: Boolean): ParseResult {
+    private fun parseTorWarning(text: String, isPDS: Boolean, isEmergency: Boolean = false): ParseResult {
         val polygon = mutableListOf<LatLon>()
         val latLonMatch = Regex("""LAT\.\.\.LON\s+([\d\s]+)""").find(text)
 
@@ -159,7 +160,11 @@ class NwsTextParser @Inject constructor() {
             emptyList()
         }
 
-        val subType = if (isPDS) "TOR_PDS" else "TOR"
+        val subType = when {
+            isEmergency -> "TOR_EMERGENCY"
+            isPDS -> "TOR_PDS"
+            else -> "TOR"
+        }
         return ParseResult(tornadoes, hasTornadoContent = true, subType = subType, isPDS = isPDS)
     }
 
@@ -426,6 +431,11 @@ class NwsTextParser @Inject constructor() {
 
     private fun detectPDS(upperText: String): Boolean {
         return "PARTICULARLY DANGEROUS SITUATION" in upperText
+    }
+
+    /** Detect "TORNADO EMERGENCY" — highest tornado tier above PDS. */
+    private fun detectEmergency(upperText: String): Boolean {
+        return Regex("""TORNADO\s+EMERGENCY""").containsMatchIn(upperText)
     }
 
     private fun hasTornadoKeywords(text: String): Boolean {

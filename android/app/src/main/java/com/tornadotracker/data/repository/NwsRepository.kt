@@ -118,23 +118,52 @@ class NwsRepository @Inject constructor(
     }
 
     /**
-     * Fetch currently-active tornado warnings and adapt them into NwsProduct
-     * shape so they can flow through the same feed pipeline as PNS/TOR/LSR.
+     * Fetch currently-active tornado warnings AND watches in parallel and
+     * adapt them into NwsProduct shape so they can flow through the same
+     * feed pipeline as PNS/TOR/LSR.
      */
-    suspend fun fetchActiveAlerts(): List<NwsProduct> {
-        return try {
-            val response = api.getActiveAlerts()
-            response.features.mapNotNull { feature -> featureToProduct(feature) }
-        } catch (e: Exception) {
-            emptyList()
+    suspend fun fetchActiveAlerts(): List<NwsProduct> = coroutineScope {
+        val events = listOf("Tornado Warning", "Tornado Watch")
+        val deferred = events.map { ev ->
+            async {
+                try {
+                    api.getActiveAlerts(ev).features
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            }
         }
+        deferred.awaitAll()
+            .flatten()
+            .mapNotNull { feature -> featureToProduct(feature) }
     }
 
     private fun featureToProduct(feature: AlertFeature): NwsProduct? {
         val props = feature.properties ?: return null
-        val isPds = listOfNotNull(props.description, props.headline)
-            .any { it.contains("PARTICULARLY DANGEROUS SITUATION", ignoreCase = true) }
-        val subType = if (isPds) "ALERT_TOR_PDS" else "ALERT_TOR"
+        val event = props.event ?: ""
+        val isWatch = event.contains("Tornado Watch", ignoreCase = true)
+        val isWarning = event.contains("Tornado Warning", ignoreCase = true)
+        if (!isWatch && !isWarning) return null
+
+        val haystack = listOfNotNull(props.description, props.headline).joinToString(" ")
+        val isPds = haystack.contains("PARTICULARLY DANGEROUS SITUATION", ignoreCase = true)
+        // Emergency only applies to warnings.
+        val isEmergency = !isWatch && Regex("""TORNADO\s+EMERGENCY""", RegexOption.IGNORE_CASE)
+            .containsMatchIn(haystack)
+
+        val subType = when {
+            isWatch && isPds -> "WATCH_TOR_PDS"
+            isWatch -> "WATCH_TOR"
+            isEmergency -> "ALERT_TOR_EMERGENCY"
+            isPds -> "ALERT_TOR_PDS"
+            else -> "ALERT_TOR"
+        }
+        val category = when {
+            isWatch -> Category.WATCH
+            isEmergency -> Category.EMERGENCY
+            else -> Category.ALERT
+        }
+
         val polygon = extractPolygon(feature.geometry)
         val centroid = polygon.takeIf { it.isNotEmpty() }?.let {
             LatLon(it.sumOf { p -> p.lat } / it.size, it.sumOf { p -> p.lon } / it.size)
@@ -144,12 +173,12 @@ class NwsRepository @Inject constructor(
         return NwsProduct(
             id = id,
             productCode = "TOR",
-            productName = props.headline ?: "Tornado Warning",
+            productName = props.headline ?: event.ifBlank { "Tornado Warning" },
             issuingOffice = props.senderName ?: "",
             issuanceTime = props.sent ?: props.effective ?: "",
             subType = subType,
             isPDS = isPds,
-            category = Category.ALERT,
+            category = category,
             alert = AlertPayload(
                 headline = props.headline,
                 description = props.description,

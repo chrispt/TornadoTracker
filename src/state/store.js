@@ -12,7 +12,7 @@ const initialState = {
   searchResults: [],
   searchFilters: { type: 'PNS', office: '', startDate: '', endDate: '', keyword: '' },
   activeView: 'feed',
-  selectedCategories: ['SURVEY', 'LSR', 'PDS', 'WARNING', 'ALERT'],
+  selectedCategories: ['EMERGENCY', 'ALERT', 'WATCH', 'WARNING', 'PDS', 'SURVEY', 'LSR'],
   refreshInterval: DEFAULT_REFRESH_INTERVAL,
   isLoading: false,
   error: null,
@@ -25,6 +25,8 @@ const initialState = {
   lastSeenAt: 0,
   // New: map panel visibility
   mapVisible: true,
+  // New: NEXRAD radar overlay visibility (off by default — bandwidth)
+  radarVisible: false,
   // New: offline mode flag
   isOffline: false
 };
@@ -35,7 +37,8 @@ const PERSISTED_KEYS = [
   'savedLocations',
   'activeLocationId',
   'radiusMiles',
-  'lastSeenAt'
+  'lastSeenAt',
+  'radarVisible'
 ];
 
 const KEY_TO_STORAGE = {
@@ -44,7 +47,8 @@ const KEY_TO_STORAGE = {
   savedLocations: STORAGE_KEYS.SAVED_LOCATIONS,
   activeLocationId: STORAGE_KEYS.ACTIVE_LOCATION,
   radiusMiles: STORAGE_KEYS.RADIUS_MILES,
-  lastSeenAt: STORAGE_KEYS.LAST_SEEN_AT
+  lastSeenAt: STORAGE_KEYS.LAST_SEEN_AT,
+  radarVisible: STORAGE_KEYS.RADAR_VISIBLE
 };
 
 class Store {
@@ -151,6 +155,9 @@ class Store {
 
     const seen = tryParse(STORAGE_KEYS.LAST_SEEN_AT, null);
     if (typeof seen === 'number') this._state.lastSeenAt = seen;
+
+    const radar = tryParse(STORAGE_KEYS.RADAR_VISIBLE, null);
+    if (typeof radar === 'boolean') this._state.radarVisible = radar;
   }
 
   _persistToStorage(key, value) {

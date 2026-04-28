@@ -120,6 +120,30 @@
   display: inline-block;
 }
 
+.stats-bar__emergency {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  background: var(--danger);
+  color: #fff;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  animation: pulse-alert 1.6s ease-in-out infinite;
+}
+
+.stats-bar__emergency-icon {
+  font-size: 14px;
+}
+
+@keyframes pulse-alert {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 70%, transparent); }
+  50%      { box-shadow: 0 0 0 8px color-mix(in srgb, var(--danger) 0%, transparent); }
+}
+
 /* Sidebar (feed / search) */
 .sidebar {
   grid-area: sidebar;

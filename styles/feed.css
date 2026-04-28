@@ -19,6 +19,23 @@
   animation: cardEnter 250ms ease both;
 }
 
+/* Emergency: red border + subtle glow so it stands out among warnings */
+.product-card--emergency {
+  border-left: 3px solid var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, var(--bg-card));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--danger) 30%, transparent),
+              0 4px 12px color-mix(in srgb, var(--danger) 20%, rgba(0,0,0,0.4));
+}
+
+.product-card--emergency .product-card__office {
+  color: #fecaca;
+}
+
+/* Watch: subtle amber tint to differentiate from warnings */
+.product-card--watch {
+  border-left: 3px solid var(--warning);
+}
+
 .product-card:hover {
   background: var(--bg-card-hover);
   box-shadow: var(--shadow-card-hover);

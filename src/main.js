@@ -111,8 +111,10 @@ async function refreshProducts() {
     }
   });
 
-  // Merge: keep alerts & previously-confirmed PNS/LSR from prior cycle.
-  // Alerts come from a separate polling loop so we leave them intact here.
+  // Merge: keep alert-derived entries (warnings/watches/emergencies — those
+  // come from /alerts/active on a separate polling loop) and previously-
+  // confirmed PNS/LSR. Drop stale TOR products since the new fetch
+  // includes a fresh snapshot.
   const previouslyConfirmed = allTornadoProducts.filter(p =>
     p._category && p._category !== 'WARNING' && !ALWAYS_TORNADO_TYPES.has(p.productCode)
   );
@@ -126,9 +128,13 @@ async function refreshProducts() {
   fetchDetailsInBackground(allToProcess, generation);
 }
 
+const ALERT_CATEGORIES = new Set(['ALERT', 'WATCH', 'EMERGENCY']);
+
 async function refreshAlerts() {
   const { alerts } = await fetchActiveAlerts();
-  const nonAlerts = allTornadoProducts.filter(p => p._category !== 'ALERT');
+  // Drop everything alert-derived (warnings + watches + emergencies) and
+  // replace wholesale with the latest snapshot.
+  const nonAlerts = allTornadoProducts.filter(p => !ALERT_CATEGORIES.has(p._category));
   allTornadoProducts = [...alerts, ...nonAlerts];
   dedupeAndSort();
   applyFilterAndUpdateStore();

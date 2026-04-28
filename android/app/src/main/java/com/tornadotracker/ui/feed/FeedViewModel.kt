@@ -50,8 +50,10 @@ class FeedViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             val result = repository.fetchProductsImmediate()
 
-            // Stage 1: Show TOR products immediately
-            allTornadoProducts.removeAll { it.category?.key != "ALERT" }
+            // Stage 1: Show TOR products immediately. Keep alert-derived
+            // entries (warnings/watches/emergencies) since those are
+            // refreshed on a separate cadence.
+            allTornadoProducts.removeAll { it.category?.key !in ALERT_CATEGORIES }
             allTornadoProducts.addAll(result.torProducts)
             allTornadoProducts.sortByDescending { it.issuanceTime }
             applyFilterAndUpdateState(error = result.errors.firstOrNull())
@@ -73,16 +75,19 @@ class FeedViewModel @Inject constructor(
         }
     }
 
-    /** Refresh active alerts from /alerts/active. */
+    /** Refresh active alerts (warnings + watches + emergencies). */
     private fun refreshAlerts() {
         viewModelScope.launch {
             val alerts = repository.fetchActiveAlerts()
-            // Replace existing alerts with the latest snapshot
-            allTornadoProducts.removeAll { it.category?.key == "ALERT" }
+            allTornadoProducts.removeAll { it.category?.key in ALERT_CATEGORIES }
             allTornadoProducts.addAll(alerts)
             allTornadoProducts.sortByDescending { it.issuanceTime }
             applyFilterAndUpdateState()
         }
+    }
+
+    companion object {
+        private val ALERT_CATEGORIES = setOf("ALERT", "WATCH", "EMERGENCY")
     }
 
     private fun startAlertsPolling() {

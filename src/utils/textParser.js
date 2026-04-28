@@ -24,9 +24,10 @@ export function parseProductText(text, productType = 'PNS') {
 
   const upperText = text.toUpperCase();
   const isPDS = detectPDS(upperText);
+  const isEmergency = detectEmergency(upperText);
 
   if (productType === 'TOR') {
-    return parseTorWarning(text, isPDS);
+    return parseTorWarning(text, isPDS, isEmergency);
   }
 
   if (productType === 'LSR') {
@@ -79,6 +80,15 @@ export function parseProductText(text, productType = 'PNS') {
 export function detectPDS(text) {
   if (!text) return false;
   return text.toUpperCase().includes('PARTICULARLY DANGEROUS SITUATION');
+}
+
+/**
+ * Detect "Tornado Emergency" — the highest tornado-warning tier, used for
+ * confirmed tornadoes threatening populated areas. Sits above PDS.
+ */
+export function detectEmergency(text) {
+  if (!text) return false;
+  return /TORNADO\s+EMERGENCY/i.test(text);
 }
 
 /**
@@ -295,7 +305,7 @@ export function parseNWSCoords(latStr, lonStr) {
 /**
  * Parse TOR (tornado warning) product — extract warning polygon.
  */
-function parseTorWarning(text, isPDS = false) {
+function parseTorWarning(text, isPDS = false, isEmergency = false) {
   const polygon = [];
   const latLonMatch = text.match(/LAT\.\.\.LON\s+([\d\s]+)/);
 
@@ -377,7 +387,8 @@ function parseTorWarning(text, isPDS = false) {
     });
   }
 
-  return { tornadoes, hasTornadoContent: true, subType: isPDS ? 'TOR_PDS' : 'TOR', isPDS };
+  const subType = isEmergency ? 'TOR_EMERGENCY' : (isPDS ? 'TOR_PDS' : 'TOR');
+  return { tornadoes, hasTornadoContent: true, subType, isPDS, isEmergency };
 }
 
 /**
