@@ -169,9 +169,9 @@ class NwsTextParser @Inject constructor() {
 
         for (i in lines.indices) {
             val line = lines[i]
-            // LSR tabular rows always start with a time like "1248 AM" — require it
-            // so we don't pick up the word "tornado" in remarks/free-text lines.
-            if (!Regex("""^\s*\d{3,4}\s+[AP]M\b""", RegexOption.IGNORE_CASE).containsMatchIn(line)) continue
+            // LSR tabular rows always start at column 0 with a time like "1248 AM".
+            // Anchor strictly to the start of the line to skip indented remarks.
+            if (!Regex("""^\d{3,4}\s+[AP]M\b""", RegexOption.IGNORE_CASE).containsMatchIn(line)) continue
             if (!line.contains("TORNADO", ignoreCase = true) || line.contains("WATERSPOUT", ignoreCase = true)) continue
 
             val line1 = line.trim()

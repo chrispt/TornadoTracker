@@ -388,9 +388,9 @@ function parseLSR(text) {
   const lines = text.split('\n');
 
   for (let i = 0; i < lines.length; i++) {
-    // LSR tabular rows always start with a time like "1248 AM" — require it
-    // so we don't pick up the word "tornado" in remarks/free-text lines.
-    if (!/^\s*\d{3,4}\s+[AP]M\b/i.test(lines[i])) continue;
+    // LSR tabular rows always start at column 0 with a time like "1248 AM".
+    // Anchor strictly to the start of the line to skip indented remarks.
+    if (!/^\d{3,4}\s+[AP]M\b/i.test(lines[i])) continue;
     if (!/TORNADO/i.test(lines[i]) || /WATERSPOUT/i.test(lines[i])) continue;
 
     // Parse LSR two-line tabular format:
