@@ -53,15 +53,33 @@
   color: inherit;
   font-size: 13px;
   max-width: 140px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .locations__radius {
-  width: 50px;
+  width: 56px;
   border: none;
   background: transparent;
   color: inherit;
   font-size: 13px;
   font-family: var(--font-mono);
+  text-align: right;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.locations__radius::-webkit-outer-spin-button,
+.locations__radius::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.locations__radius::-webkit-outer-spin-button,
+.locations__radius::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .locations__unit {

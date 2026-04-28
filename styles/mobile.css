@@ -1,0 +1,316 @@
+/**
+ * Mobile-specific overrides.
+ *
+ * Loaded last so it can override base/main/feed/detail/map. Scoped to the
+ * common phone breakpoint (<= 768px). Optimizes for one-handed tracking on
+ * the move: compact header, larger touch targets, bottom-sheet modals,
+ * and safe-area insets for notched devices.
+ */
+
+/* iOS safe-area insets — apply to outer chrome */
+@supports (padding: max(0px)) {
+  @media (max-width: 768px) {
+    .app-header {
+      padding-top: max(var(--space-xs), env(safe-area-inset-top));
+      padding-left: max(var(--space-sm), env(safe-area-inset-left));
+      padding-right: max(var(--space-sm), env(safe-area-inset-right));
+    }
+    .sidebar__content {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .main-panel__detail {
+      padding-bottom: max(var(--space-sm), env(safe-area-inset-bottom));
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  /* ── Header: collapse to two rows ────────────────────────────────────
+     Row 1: title + offline-pill + refresh + status
+     Row 2: filter chips (horizontal scroll)
+     Row 3: locations + office (compact)
+     Map toggle hidden — main-panel is already hidden on mobile.
+  */
+  .app-header__map-toggle {
+    display: none;
+  }
+
+  .app-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-xs);
+    padding-bottom: var(--space-xs);
+  }
+
+  .app-header__title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .app-header__controls {
+    display: contents;
+    /* Children become direct grid items of .app-header */
+  }
+
+  .app-header__filters {
+    /* Horizontal-scroll row of chips */
+    display: flex;
+    gap: var(--space-xs);
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin: 0 calc(var(--space-sm) * -1);
+    padding: 2px var(--space-sm);
+  }
+
+  .filter-chip {
+    flex-shrink: 0;
+    /* Larger touch target — 36px+ tall */
+    padding: 8px 14px;
+    min-height: 36px;
+  }
+
+  /* Locations + office on one row, equal-share */
+  #locations-host {
+    flex: 1;
+  }
+
+  .locations {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .locations__select {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+  }
+
+  #office-filter {
+    width: 110px !important;
+    min-height: 36px;
+  }
+
+  /* Refresh button + status: pin status next to title, compact button */
+  #refresh-btn {
+    min-height: 36px;
+  }
+
+  .app-header__status {
+    font-size: 11px;
+    text-align: right;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .offline-pill {
+    font-size: 11px;
+    padding: 2px 8px;
+  }
+
+  /* ── Filter chips: keyboard fix + tighter visuals ─────────────────── */
+  /* The label was getting tabindex="0" by JS — drop it; the inner checkbox
+     is already focusable and that's where the keyboard event fires. */
+  .filter-chip {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .filter-chip:active {
+    transform: scale(0.97);
+  }
+
+  /* ── Stats bar: smaller, tighter ──────────────────────────────────── */
+  .stats-bar {
+    font-size: 11px;
+    padding: 4px var(--space-sm);
+  }
+
+  /* ── Sidebar tabs: equal-width, taller ─────────────────────────────── */
+  .sidebar__tabs {
+    position: sticky;
+    top: 0;
+    background: var(--bg-primary);
+    z-index: 5;
+  }
+
+  /* ── Cards: tighter spacing, larger time text ─────────────────────── */
+  .product-card {
+    margin: 4px var(--space-xs);
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+  }
+
+  .product-card__office {
+    font-size: 14px;
+  }
+
+  .product-card__time {
+    font-size: 12px;
+  }
+
+  .product-card__preview {
+    font-size: 12px;
+    -webkit-line-clamp: 2;
+  }
+
+  .product-card__type-badge {
+    font-size: 10px;
+    padding: 2px 5px;
+  }
+
+  /* ── Detail view: sticky header so Back is always reachable ───────── */
+  .detail-view__header {
+    position: sticky;
+    top: 0;
+    background: var(--bg-primary);
+    padding: var(--space-xs) 0;
+    margin: 0 0 var(--space-sm) 0;
+    z-index: 4;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .detail-view__back {
+    flex-shrink: 0;
+  }
+
+  .detail-view__title {
+    font-size: 14px;
+    line-height: 1.3;
+    /* Allow wrap to two lines */
+    overflow-wrap: anywhere;
+  }
+
+  .detail-view__actions {
+    display: flex;
+    flex-shrink: 0;
+  }
+
+  .detail-view__actions .btn {
+    min-height: 36px;
+    min-width: 44px;
+  }
+
+  .detail-view__raw {
+    font-size: 11.5px;
+  }
+
+  /* ── Modal: bottom-sheet style ─────────────────────────────────────── */
+  .modal {
+    width: 100vw;
+    max-width: 100vw;
+    margin: 0 0 0 0;
+    padding: 0;
+    border: none;
+    border-top: 1px solid var(--border-color);
+    border-radius: 16px 16px 0 0;
+    /* Anchor to the bottom of the viewport */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    top: auto;
+    transform: none;
+    animation: sheet-up 200ms ease-out;
+  }
+
+  .modal__form {
+    padding: var(--space-md);
+    padding-bottom: max(var(--space-md), env(safe-area-inset-bottom));
+  }
+
+  /* Drag handle indicator at the top of the sheet */
+  .modal__form::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border-light);
+    margin: -4px auto var(--space-sm);
+  }
+
+  .modal__row {
+    flex-direction: column;
+  }
+
+  .modal__input {
+    /* iOS zooms inputs with font-size <16px on focus — bump to prevent zoom */
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .modal__actions {
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+  }
+
+  .modal__actions .btn {
+    min-height: 44px;
+    flex: 1;
+  }
+
+  .modal__spacer {
+    display: none;
+  }
+
+  @keyframes sheet-up {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+
+  /* ── Toast: float above the iOS home indicator ────────────────────── */
+  .toast {
+    bottom: max(24px, calc(env(safe-area-inset-bottom) + 16px));
+    left: var(--space-sm);
+    right: var(--space-sm);
+    transform: none;
+    width: auto;
+    max-width: none;
+    justify-content: center;
+  }
+
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes toast-out {
+    to { opacity: 0; transform: translateY(8px); }
+  }
+
+  /* ── Inputs: prevent iOS zoom on focus (font-size >= 16px) ────────── */
+  input[type="text"],
+  input[type="number"],
+  select,
+  .search-form__input {
+    font-size: 16px;
+  }
+
+  /* ── Locations control: native control sizing ─────────────────────── */
+  .locations__select,
+  .locations__radius {
+    font-size: 14px;
+  }
+}
+
+/* ── Smaller phones (< 380px wide): even tighter ────────────────────── */
+@media (max-width: 379px) {
+  .app-header__title {
+    font-size: var(--text-base);
+  }
+
+  .filter-chip {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .stats-bar {
+    font-size: 10.5px;
+  }
+
+  #office-filter {
+    width: 90px !important;
+  }
+}

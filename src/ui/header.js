@@ -14,7 +14,7 @@ export function initHeader() {
       <input type="text" id="office-filter" placeholder="Office (e.g. KBMX)"
         aria-label="Filter by NWS office code"
         style="width:130px;" />
-      <button class="btn btn--ghost btn--sm" id="map-toggle-btn"
+      <button class="btn btn--ghost btn--sm app-header__map-toggle" id="map-toggle-btn"
         aria-label="Toggle map" aria-pressed="true">
         Map
       </button>
@@ -100,7 +100,7 @@ function renderCategoryFilters() {
       <label class="filter-chip ${checkedClass}" style="--filter-chip-color:${cat.color};">
         <input type="checkbox" value="${key}" ${isChecked ? 'checked' : ''}
                class="type-filter-cb sr-only"
-               aria-label="${cat.label} filter" />
+               aria-label="${cat.label}" />
         <span class="filter-chip__dot" style="background:${cat.color};" aria-hidden="true"></span>
         <span>${cat.label}</span>
       </label>
