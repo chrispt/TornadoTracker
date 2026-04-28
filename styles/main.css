@@ -217,6 +217,47 @@
   50%      { box-shadow: 0 0 0 8px color-mix(in srgb, var(--danger) 0%, transparent); }
 }
 
+/* Radar callout — TVS / debris-signature detection summary */
+.stats-bar__radar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  border: 1px solid transparent;
+}
+
+.stats-bar__radar strong {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.stats-bar__radar-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.stats-bar__radar--confirmed {
+  background: color-mix(in srgb, var(--danger) 22%, var(--bg-secondary));
+  color: #fecaca;
+  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+  animation: pulse-radar-confirmed 2s ease-in-out infinite;
+}
+
+.stats-bar__radar--indicated {
+  background: color-mix(in srgb, var(--warning) 18%, var(--bg-secondary));
+  color: #fde68a;
+  border-color: color-mix(in srgb, var(--warning) 50%, transparent);
+}
+
+@keyframes pulse-radar-confirmed {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 55%, transparent); }
+  50%      { box-shadow: 0 0 0 6px color-mix(in srgb, var(--danger) 0%, transparent); }
+}
+
 /* Sidebar (filters → scope → tabs → content) */
 .sidebar {
   grid-area: sidebar;

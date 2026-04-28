@@ -20,9 +20,13 @@ function renderStats() {
   const products = store.get('products') || [];
 
   const catCounts = {};
+  let radarConfirmed = 0;
+  let radarIndicated = 0;
   products.forEach(p => {
     const cat = p._category || 'UNKNOWN';
     catCounts[cat] = (catCounts[cat] || 0) + 1;
+    if (p._radarStatus === 'CONFIRMED') radarConfirmed++;
+    else if (p._radarStatus === 'INDICATED') radarIndicated++;
   });
 
   let html = '';
@@ -33,6 +37,24 @@ function renderStats() {
       <div class="stats-bar__emergency" role="alert" aria-live="assertive">
         <span class="stats-bar__emergency-icon" aria-hidden="true">⚠</span>
         <span>${emergencyCount} Active Tornado Emergency${emergencyCount > 1 ? 's' : ''}</span>
+      </div>
+    `;
+  }
+
+  // Radar callout — separate from emergency; shows TVS / debris detections.
+  // Confirmed wins display priority; Indicated only shown if no Confirmed.
+  if (radarConfirmed > 0) {
+    html += `
+      <div class="stats-bar__radar stats-bar__radar--confirmed" role="alert" aria-live="assertive">
+        <span class="stats-bar__radar-icon" aria-hidden="true">📡</span>
+        <span><strong>${radarConfirmed}</strong> Radar Confirmed Tornado${radarConfirmed > 1 ? 'es' : ''}</span>
+      </div>
+    `;
+  } else if (radarIndicated > 0) {
+    html += `
+      <div class="stats-bar__radar stats-bar__radar--indicated" role="status" aria-live="polite">
+        <span class="stats-bar__radar-icon" aria-hidden="true">📡</span>
+        <span><strong>${radarIndicated}</strong> Radar Indicated &middot; TVS detected</span>
       </div>
     `;
   }
