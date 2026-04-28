@@ -122,11 +122,15 @@ function renderFeed() {
   }
 
   if (!products || products.length === 0) {
+    const hasLocation = !!store.get('activeLocationId');
+    const hint = hasLocation
+      ? 'Try selecting different categories, widening your radius, or removing the saved location filter.'
+      : 'Try selecting different categories or check back later for new reports.';
     container.innerHTML = `
       <div class="feed-empty">
-        <div class="feed-empty__icon">&#127786;</div>
+        <div class="feed-empty__icon" aria-hidden="true">&#127786;</div>
         <div class="feed-empty__title">No tornado products found</div>
-        <div class="feed-empty__subtitle">Try selecting different categories or check back later for new reports</div>
+        <div class="feed-empty__subtitle">${hint}</div>
       </div>
     `;
     return;

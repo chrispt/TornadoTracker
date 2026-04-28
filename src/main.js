@@ -354,9 +354,25 @@ function setupEventListeners() {
     showDetailOnMobile();
   });
 
-  store.subscribe('selectedProductDetail', () => {
-    if (!store.get('selectedProductDetail')) {
+  // Focus the Back button after the detail view renders so keyboard users
+  // land in the right place. Use the rAF queue so the new innerHTML is
+  // already in the DOM.
+  store.subscribe('selectedProductDetail', (detail, prev) => {
+    if (detail) {
+      requestAnimationFrame(() => {
+        document.querySelector('.detail-view__back')?.focus();
+      });
+    } else {
       showFeedOnMobile();
+      // Restore focus to the previously-selected card if it's still in the DOM
+      const prevId = prev?.id;
+      if (prevId) {
+        requestAnimationFrame(() => {
+          document
+            .querySelector(`.product-card[data-product-id="${CSS.escape(prevId)}"]`)
+            ?.focus();
+        });
+      }
     }
   });
 }
@@ -400,8 +416,11 @@ init().catch(err => {
   console.error('TornadoTracker init failed:', err);
   const app = document.getElementById('app');
   if (app) {
-    app.innerHTML = `<div class="error-banner" style="margin:var(--space-lg);">
-      Failed to initialize: ${err.message}
-    </div>`;
+    const banner = document.createElement('div');
+    banner.className = 'error-banner';
+    banner.setAttribute('role', 'alert');
+    banner.style.margin = 'var(--space-lg)';
+    banner.textContent = `Failed to initialize: ${err.message}`;
+    app.replaceChildren(banner);
   }
 });

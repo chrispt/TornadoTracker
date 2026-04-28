@@ -1,6 +1,7 @@
 import store from '../state/store.js';
 import { EF_SCALE } from '../config/constants.js';
 import { formatDate, escapeHtml, extractOfficeCode } from '../utils/formatting.js';
+import { showToast } from './toast.js';
 
 /**
  * Initialize the detail view — shows full product detail with parsed highlights.
@@ -32,9 +33,9 @@ async function copyText() {
   if (!detail?.productText) return;
   try {
     await navigator.clipboard.writeText(detail.productText);
-    flash('Copied to clipboard');
+    showToast('Copied to clipboard');
   } catch {
-    flash('Copy failed');
+    showToast('Copy failed');
   }
 }
 
@@ -47,18 +48,10 @@ async function shareLink() {
   }
   try {
     await navigator.clipboard.writeText(url);
-    flash('Link copied');
+    showToast('Link copied');
   } catch {
-    flash('Copy failed');
+    showToast('Copy failed');
   }
-}
-
-function flash(msg) {
-  const el = document.createElement('div');
-  el.className = 'toast';
-  el.textContent = msg;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 1800);
 }
 
 function renderDetail() {

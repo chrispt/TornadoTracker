@@ -13,7 +13,7 @@
  * app — that handles the data layer. The SW handles the shell + raw API.
  */
 
-const VERSION = 'tt-v3';
+const VERSION = 'tt-v4';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const API_CACHE = `${VERSION}-api`;
@@ -52,7 +52,15 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Same-origin hashed assets + third-party (tile servers, leaflet CSS): cache-first
+  // Cross-origin requests (OSM tiles, leaflet CDN): pass through without
+  // caching. Tile responses are bulky and opaque, and OSM's usage policy
+  // discourages aggressive client-side caching. Same goes for unpkg —
+  // the leaflet CSS is small and the CDN handles its own caching.
+  if (url.origin !== self.location.origin) {
+    return; // let the browser handle it normally
+  }
+
+  // Same-origin hashed assets: cache-first
   event.respondWith(cacheFirst(req, RUNTIME_CACHE));
 });
 

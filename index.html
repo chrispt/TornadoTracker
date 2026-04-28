@@ -4,6 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0f172a" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self';
+             script-src 'self';
+             style-src 'self' https://unpkg.com 'unsafe-inline';
+             img-src 'self' data: https://*.tile.openstreetmap.org;
+             font-src 'self' data: https://unpkg.com;
+             connect-src 'self' https://api.weather.gov;
+             worker-src 'self';
+             frame-ancestors 'none';
+             base-uri 'self';
+             form-action 'self'" />
   <title>TornadoTracker</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="

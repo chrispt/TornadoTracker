@@ -4,6 +4,7 @@ import { fetchProductList, fetchProductDetail } from '../api/nwsProducts.js';
 import { renderProductCard } from './productCard.js';
 import { parseProductText } from '../utils/textParser.js';
 import { productCache } from '../modules/productCache.js';
+import { escapeHtml } from '../utils/formatting.js';
 
 /**
  * Initialize the search view with form and results.
@@ -15,7 +16,7 @@ export function initSearchView() {
   container.innerHTML = `
     <div class="search-form">
       <div class="search-form__row">
-        <label class="search-form__label">Type</label>
+        <label class="search-form__label" for="search-type">Type</label>
         <select id="search-type" class="search-form__input">
           ${Object.entries(PRODUCT_TYPES).map(([code, info]) =>
             `<option value="${code}">${code} - ${info.label}</option>`
@@ -23,18 +24,18 @@ export function initSearchView() {
         </select>
       </div>
       <div class="search-form__row">
-        <label class="search-form__label">Office</label>
+        <label class="search-form__label" for="search-office">Office</label>
         <input type="text" id="search-office" placeholder="e.g. KBMX" class="search-form__input" />
       </div>
       <div class="search-form__row">
-        <label class="search-form__label">Keyword</label>
+        <label class="search-form__label" for="search-keyword">Keyword</label>
         <input type="text" id="search-keyword" placeholder="e.g. tornado, EF3" class="search-form__input" />
       </div>
       <div class="search-form__row">
         <button class="btn btn--primary" id="search-btn">Search</button>
       </div>
     </div>
-    <div class="search-results" id="search-results"></div>
+    <div class="search-results" id="search-results" aria-live="polite"></div>
   `;
 
   document.getElementById('search-btn').addEventListener('click', handleSearch);
@@ -61,7 +62,7 @@ async function handleSearch() {
   const { data, error } = await fetchProductList({ type, office, limit: 50 });
 
   if (error) {
-    resultsContainer.innerHTML = `<div class="error-banner">${error.message}</div>`;
+    resultsContainer.innerHTML = `<div class="error-banner" role="alert">${escapeHtml(error.message)}</div>`;
     return;
   }
 

@@ -22,7 +22,9 @@ export async function fetchWithErrorHandling(url, options = {}) {
   const defaultOptions = {
     headers: {
       'Accept': 'application/geo+json',
-      'User-Agent': '(TornadoTracker, contact@example.com)'
+      // Browsers strip User-Agent on fetch from web pages, but we leave a real
+      // identifier here for completeness (matches NWS guidance).
+      'User-Agent': '(TornadoTracker, https://github.com/chrispt/TornadoTracker)'
     }
   };
 
