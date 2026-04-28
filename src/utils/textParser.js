@@ -50,10 +50,9 @@ export function parseProductText(text, productType = 'PNS') {
     const surveyRegex = /\n\s*\.{1,3}([^.\n][^.]*?)\.{3}\s*\n([\s\S]*?)(?=\n\s*\.{1,3}[^.\n][^.]*?\.{3}\s*\n|&&|\$\$|$)/gi;
     let match;
     while ((match = surveyRegex.exec(text)) !== null) {
-      // Skip sections clearly about non-tornado events
-      const name = match[1].toLowerCase();
-      if (/\b(?:hail|wind|flood|snow|ice|lightning|rain)\b/.test(name)) continue;
-      const parsed = parseTornadoSection(match[2]);
+      const rawName = match[1].trim();
+      if (/\b(?:hail|wind|flood|snow|ice|lightning|rain)\b/i.test(rawName)) continue;
+      const parsed = parseTornadoSection(match[2], rawName);
       if (parsed) tornadoes.push(parsed);
     }
   } else {
@@ -90,12 +89,15 @@ export function detectPDS(text) {
  * to be flexible.
  *
  * @param {string} section - Text of a single tornado report section
+ * @param {string} [eventName] - Section header (e.g. "Greens Creek Tornado")
+ *   from a damage survey — used to label the specific tornado in the UI.
  * @returns {Object|null} Structured tornado data
  */
-export function parseTornadoSection(section) {
+export function parseTornadoSection(section, eventName = null) {
   if (!section) return null;
 
   const data = {
+    eventName: cleanEventName(eventName),
     efRating: null,
     pathLength: null,
     pathWidth: null,
@@ -242,8 +244,22 @@ export function parseTornadoSection(section) {
   }
 
   // Only return if we got at least some useful data
-  const hasData = data.efRating || data.pathLength || data.lat || data.county || data.fatalities !== null;
+  const hasData = data.efRating || data.pathLength || data.lat || data.county
+    || data.fatalities !== null || data.eventName;
   return hasData ? data : null;
+}
+
+/**
+ * Normalize a damage-survey section header into a display-ready event name.
+ * Strips trailing dots/whitespace and skips uninformative names like a
+ * bare "TORNADO" — those add no value to the card.
+ */
+function cleanEventName(raw) {
+  if (!raw) return null;
+  const cleaned = raw.replace(/\.+$/, '').trim();
+  if (!cleaned) return null;
+  if (/^tornado(?:es)?$/i.test(cleaned)) return null;
+  return cleaned;
 }
 
 /**
@@ -372,6 +388,9 @@ function parseLSR(text) {
   const lines = text.split('\n');
 
   for (let i = 0; i < lines.length; i++) {
+    // LSR tabular rows always start with a time like "1248 AM" — require it
+    // so we don't pick up the word "tornado" in remarks/free-text lines.
+    if (!/^\s*\d{3,4}\s+[AP]M\b/i.test(lines[i])) continue;
     if (!/TORNADO/i.test(lines[i]) || /WATERSPOUT/i.test(lines[i])) continue;
 
     // Parse LSR two-line tabular format:

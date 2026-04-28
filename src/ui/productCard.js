@@ -24,7 +24,8 @@ export function renderProductCard(product, isSelected = false, opts = {}) {
   const isNew = opts.lastSeenAt && issuedMs > opts.lastSeenAt;
   const newClass = isNew ? 'product-card--new' : '';
 
-  const ariaLabel = `${badgeLabel} from ${office}, ${time}${isNew ? ', new' : ''}`;
+  const namePart = product._eventName ? `, ${product._eventName}` : '';
+  const ariaLabel = `${badgeLabel} from ${office}${namePart}, ${time}${isNew ? ', new' : ''}`;
 
   return `
     <div class="product-card ${selectedClass} ${newClass}" data-product-id="${escapeHtml(product.id)}" tabindex="0" role="article" aria-label="${escapeHtml(ariaLabel)}">
@@ -33,6 +34,7 @@ export function renderProductCard(product, isSelected = false, opts = {}) {
       <div class="product-card__body">
         <div class="product-card__office">${office}</div>
         ${subTypeLabel ? `<div class="product-card__subtype">${subTypeLabel}</div>` : ''}
+        ${product._eventName ? `<div class="product-card__event-name">${escapeHtml(product._eventName)}</div>` : ''}
         <div class="product-card__time">${time}</div>
         <div class="product-card__preview">${preview}</div>
       </div>

@@ -64,6 +64,15 @@
   color: var(--color-tor);
 }
 
+.tornado-highlights__subtitle {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  margin-top: -6px;
+  margin-bottom: var(--space-sm);
+}
+
 .tornado-highlights__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));

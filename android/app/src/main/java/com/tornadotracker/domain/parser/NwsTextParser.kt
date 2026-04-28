@@ -47,9 +47,9 @@ class NwsTextParser @Inject constructor() {
             )
             val nonTornadoPattern = Regex("""\b(?:hail|wind|flood|snow|ice|lightning|rain)\b""", RegexOption.IGNORE_CASE)
             surveyRegex.findAll(text).mapNotNull { match ->
-                // Skip sections clearly about non-tornado events
                 if (nonTornadoPattern.containsMatchIn(match.groupValues[1])) return@mapNotNull null
-                parseTornadoSection(match.groupValues[2])
+                val rawName = match.groupValues[1].trim()
+                parseTornadoSection(match.groupValues[2], rawName)
             }.toList()
         } else {
             // Standard PNS — ...TORNADO... section headers
@@ -169,6 +169,9 @@ class NwsTextParser @Inject constructor() {
 
         for (i in lines.indices) {
             val line = lines[i]
+            // LSR tabular rows always start with a time like "1248 AM" — require it
+            // so we don't pick up the word "tornado" in remarks/free-text lines.
+            if (!Regex("""^\s*\d{3,4}\s+[AP]M\b""", RegexOption.IGNORE_CASE).containsMatchIn(line)) continue
             if (!line.contains("TORNADO", ignoreCase = true) || line.contains("WATERSPOUT", ignoreCase = true)) continue
 
             val line1 = line.trim()
@@ -251,8 +254,9 @@ class NwsTextParser @Inject constructor() {
         )
     }
 
-    fun parseTornadoSection(section: String?): TornadoData? {
+    fun parseTornadoSection(section: String?, eventName: String? = null): TornadoData? {
         if (section.isNullOrBlank()) return null
+        val cleanedEventName = cleanEventName(eventName)
 
         // EF Rating
         val efMatch = Regex("""(?:RATING|EF\s*SCALE|RATED)\s*(?::|\.{3})?\s*(EF[0-5U]|F[0-5])""", RegexOption.IGNORE_CASE).find(section)
@@ -373,10 +377,12 @@ class NwsTextParser @Inject constructor() {
             .filter { it.trim().length > 10 }
             .firstOrNull()?.trim()?.take(200)
 
-        val hasData = efRating != null || pathLength != null || lat != null || county != null || fatalities != null
+        val hasData = efRating != null || pathLength != null || lat != null
+            || county != null || fatalities != null || cleanedEventName != null
         if (!hasData) return null
 
         return TornadoData(
+            eventName = cleanedEventName,
             efRating = efRating,
             pathLength = pathLength,
             pathWidth = pathWidth,
@@ -425,5 +431,14 @@ class NwsTextParser @Inject constructor() {
     private fun hasTornadoKeywords(text: String): Boolean {
         val upper = text.uppercase()
         return listOf("TORNADO", "TORNADOES", "FUNNEL", "TWISTER", "WATERSPOUT").any { it in upper }
+    }
+
+    /** Normalize a survey section header. Skip uninformative bare "tornado" labels. */
+    private fun cleanEventName(raw: String?): String? {
+        if (raw.isNullOrBlank()) return null
+        val cleaned = raw.trimEnd('.').trim()
+        if (cleaned.isEmpty()) return null
+        if (Regex("""^tornado(es)?$""", RegexOption.IGNORE_CASE).matches(cleaned)) return null
+        return cleaned
     }
 }

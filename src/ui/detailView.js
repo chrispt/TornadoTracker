@@ -185,8 +185,9 @@ function renderTornadoHighlight(tornado, index) {
   return `
     <div class="tornado-highlights">
       <div class="tornado-highlights__title">
-        Tornado Report ${index > 0 ? `#${index + 1}` : ''}
+        ${tornado.eventName ? escapeHtml(tornado.eventName) : `Tornado Report${index > 0 ? ` #${index + 1}` : ''}`}
       </div>
+      ${tornado.eventName && index > 0 ? `<div class="tornado-highlights__subtitle">Tornado #${index + 1}</div>` : ''}
       <div class="tornado-highlights__grid">
         ${fields.map(f => `
           <div class="tornado-highlights__item">
