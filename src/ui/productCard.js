@@ -32,8 +32,13 @@ export function renderProductCard(product, isSelected = false, opts = {}) {
   const emergencyClass = product._category === 'EMERGENCY' ? 'product-card--emergency' : '';
   const watchClass = product._category === 'WATCH' ? 'product-card--watch' : '';
 
-  const ariaLabel = [badgeLabel, headline, `from ${office}`, time, isNew && 'new']
+  const radarLabel = product._radarStatus === 'CONFIRMED'
+    ? 'radar confirmed'
+    : product._radarStatus === 'INDICATED' ? 'radar indicated' : null;
+  const ariaLabel = [badgeLabel, radarLabel, headline, `from ${office}`, time, isNew && 'new']
     .filter(Boolean).join(', ');
+
+  const radarPill = renderRadarPill(product._radarStatus);
 
   return `
     <div class="product-card ${selectedClass} ${newClass} ${emergencyClass} ${watchClass}"
@@ -47,12 +52,22 @@ export function renderProductCard(product, isSelected = false, opts = {}) {
         <div class="product-card__top-row">
           <span class="product-card__office">${office}</span>
           ${subTypeLabel ? `<span class="product-card__subtype">${subTypeLabel}</span>` : ''}
+          ${radarPill}
         </div>
         ${headline ? `<div class="product-card__headline">${escapeHtml(headline)}</div>` : ''}
         <div class="product-card__time">${time}</div>
       </div>
     </div>
   `;
+}
+
+function renderRadarPill(status) {
+  if (!status) return '';
+  const label = status === 'CONFIRMED' ? 'Radar Confirmed' : 'Radar Indicated';
+  const cls = status === 'CONFIRMED' ? 'radar-pill--confirmed' : 'radar-pill--indicated';
+  return `<span class="radar-pill ${cls}" title="Radar-detected tornado signature (TVS)">
+    <span class="radar-pill__icon" aria-hidden="true">📡</span>${label}
+  </span>`;
 }
 
 function buildHeadline(product, subTypeLabel) {

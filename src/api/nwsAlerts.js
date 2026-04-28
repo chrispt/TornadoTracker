@@ -15,7 +15,7 @@
  */
 import { API_BASE, ALERT_ID_PREFIX } from '../config/constants.js';
 import { fetchWithErrorHandling } from './client.js';
-import { detectPDS, detectEmergency } from '../utils/textParser.js';
+import { detectPDS, detectEmergency, detectRadarStatus } from '../utils/textParser.js';
 import { centroidOf } from '../utils/geo.js';
 
 const EVENTS = ['Tornado Warning', 'Tornado Watch'];
@@ -71,6 +71,8 @@ function featureToAlert(feature) {
   const isPDS = detectPDS(haystack);
   // Emergency only applies to warnings, not watches.
   const isEmergency = !isWatch && detectEmergency(haystack);
+  // Radar status — only meaningful for warnings.
+  const radarStatus = !isWatch ? detectRadarStatus(haystack) : null;
 
   const subType = isWatch
     ? (isPDS ? 'WATCH_TOR_PDS' : 'WATCH_TOR')
@@ -94,9 +96,11 @@ function featureToAlert(feature) {
     _isPDS: isPDS,
     _isEmergency: isEmergency,
     _category: category,
+    _radarStatus: radarStatus,
     _alert: {
       event,
       headline: props.headline,
+      radarStatus,
       description: props.description,
       instruction: props.instruction,
       areaDesc: props.areaDesc,

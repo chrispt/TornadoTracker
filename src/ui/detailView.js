@@ -129,6 +129,25 @@ function renderDetail() {
   `;
 }
 
+function renderRadarBanner(status) {
+  if (!status) return '';
+  const isConfirmed = status === 'CONFIRMED';
+  const label = isConfirmed ? 'Radar Confirmed Tornado' : 'Radar Indicated';
+  const detail = isConfirmed
+    ? 'Doppler radar shows debris signature or visual confirmation.'
+    : 'Tornado vortex signature (TVS) detected by Doppler radar — no visual confirmation yet.';
+  const cls = isConfirmed ? 'radar-banner--confirmed' : 'radar-banner--indicated';
+  return `
+    <div class="radar-banner ${cls}" role="note">
+      <span class="radar-banner__icon" aria-hidden="true">📡</span>
+      <div>
+        <div class="radar-banner__label">${label}</div>
+        <div class="radar-banner__detail">${detail}</div>
+      </div>
+    </div>
+  `;
+}
+
 function renderAlert(alert) {
   const fields = [
     { label: 'Severity', value: alert.severity },
@@ -138,9 +157,12 @@ function renderAlert(alert) {
     { label: 'Expires', value: alert.expires ? formatDate(alert.expires) : null }
   ].filter(f => f.value);
 
+  const radarBanner = renderRadarBanner(alert.radarStatus);
+
   return `
     <div class="tornado-highlights">
       <div class="tornado-highlights__title">Active Tornado Warning</div>
+      ${radarBanner}
       ${alert.headline ? `<p style="font-weight:600;margin-bottom:var(--space-xs);">${escapeHtml(alert.headline)}</p>` : ''}
       ${alert.areaDesc ? `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--space-sm);">${escapeHtml(alert.areaDesc)}</p>` : ''}
       <div class="tornado-highlights__grid">
@@ -192,6 +214,7 @@ function renderTornadoHighlight(tornado, index) {
         ${tornado.eventName ? escapeHtml(tornado.eventName) : `Tornado Report${index > 0 ? ` #${index + 1}` : ''}`}
       </div>
       ${tornado.eventName && index > 0 ? `<div class="tornado-highlights__subtitle">Tornado #${index + 1}</div>` : ''}
+      ${renderRadarBanner(tornado.radarStatus)}
       <div class="tornado-highlights__grid">
         ${fields.map(f => `
           <div class="tornado-highlights__item">

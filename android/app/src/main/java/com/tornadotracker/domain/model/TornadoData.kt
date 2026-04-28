@@ -3,6 +3,8 @@ package com.tornadotracker.domain.model
 data class TornadoData(
     /** Section header from a damage survey (e.g. "Greens Creek Tornado") */
     val eventName: String? = null,
+    /** Radar-derived tornado status: "CONFIRMED" | "INDICATED" | null */
+    val radarStatus: String? = null,
     val efRating: String? = null,
     val pathLength: String? = null,
     val pathWidth: String? = null,

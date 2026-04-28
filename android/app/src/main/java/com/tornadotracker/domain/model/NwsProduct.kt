@@ -14,6 +14,8 @@ data class NwsProduct(
 )
 
 data class AlertPayload(
+    /** Radar-derived tornado status: "CONFIRMED" | "INDICATED" | null */
+    val radarStatus: String? = null,
     val headline: String? = null,
     val description: String? = null,
     val instruction: String? = null,

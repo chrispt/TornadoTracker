@@ -92,6 +92,36 @@ export function detectEmergency(text) {
 }
 
 /**
+ * Detect radar-derived tornado status from product text.
+ *
+ * The NWS forecaster's TDA / TVS algorithm flags rotation; a "Tornado
+ * Vortex Signature" (TVS) is the radar signal that something is spinning
+ * up. The forecaster surfaces that in the SOURCE / IMPACT / discussion
+ * fields with one of three patterns:
+ *
+ *   CONFIRMED — radar shows debris (TDS) or radar + spotter confirmation
+ *   INDICATED — TDA / TVS detection alone, no visual confirmation yet
+ *
+ * @returns {'CONFIRMED'|'INDICATED'|null}
+ */
+export function detectRadarStatus(text) {
+  if (!text) return null;
+  const upper = text.toUpperCase();
+
+  // Confirmed first — these phrases imply visual + radar
+  if (/RADAR\s+CONFIRMED\s+TORNADO/.test(upper)) return 'CONFIRMED';
+  if (/TORNADO\s+CONFIRMED\s+(?:BY|VIA|FROM)\s+RADAR/.test(upper)) return 'CONFIRMED';
+  if (/(?:TORNADO\s+)?DEBRIS\s+SIGNATURE/.test(upper)) return 'CONFIRMED'; // TDS
+
+  // Indicated — TDA / TVS picked up rotation, no visual confirmation
+  if (/(?:DOPPLER\s+)?RADAR\s+INDICATED/.test(upper)) return 'INDICATED';
+  if (/TORNADO\s+VORTEX\s+SIGNATURE/.test(upper)) return 'INDICATED';
+  if (/\bTVS\b/.test(upper)) return 'INDICATED';
+
+  return null;
+}
+
+/**
  * Parse a single tornado section from a PNS bulletin.
  *
  * TODO: This is the core parsing function — the most interesting design
@@ -362,6 +392,11 @@ function parseTorWarning(text, isPDS = false, isEmergency = false) {
   }
 
   const tornadoes = [];
+  // Radar-derived status (TVS / TDA / debris signature) — checked across
+  // the whole product text since the indicator can appear in SOURCE,
+  // IMPACT, or HAZARD fields.
+  const radarStatus = detectRadarStatus(text);
+
   if (polygon.length > 0) {
     const centroid = centroidOf(polygon);
 
@@ -383,12 +418,13 @@ function parseTorWarning(text, isPDS = false, isEmergency = false) {
       hazard,
       impact,
       motionDescription,
-      polygon
+      polygon,
+      radarStatus
     });
   }
 
   const subType = isEmergency ? 'TOR_EMERGENCY' : (isPDS ? 'TOR_PDS' : 'TOR');
-  return { tornadoes, hasTornadoContent: true, subType, isPDS, isEmergency };
+  return { tornadoes, hasTornadoContent: true, subType, isPDS, isEmergency, radarStatus };
 }
 
 /**

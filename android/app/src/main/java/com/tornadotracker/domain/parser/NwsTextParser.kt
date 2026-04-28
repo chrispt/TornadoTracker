@@ -141,8 +141,10 @@ class NwsTextParser @Inject constructor() {
                 lat = polygon.map { it.lat }.average(),
                 lon = polygon.map { it.lon }.average()
             )
+            val radarStatus = detectRadarStatus(text)
             listOf(
                 TornadoData(
+                    radarStatus = radarStatus,
                     lat = centroid.lat,
                     lon = centroid.lon,
                     county = county,
@@ -436,6 +438,25 @@ class NwsTextParser @Inject constructor() {
     /** Detect "TORNADO EMERGENCY" — highest tornado tier above PDS. */
     private fun detectEmergency(upperText: String): Boolean {
         return Regex("""TORNADO\s+EMERGENCY""").containsMatchIn(upperText)
+    }
+
+    /**
+     * Detect radar-derived tornado status (TVS / TDA / debris signature).
+     * Returns "CONFIRMED" | "INDICATED" | null.
+     */
+    fun detectRadarStatus(text: String?): String? {
+        if (text.isNullOrBlank()) return null
+        val upper = text.uppercase()
+
+        if (Regex("""RADAR\s+CONFIRMED\s+TORNADO""").containsMatchIn(upper)) return "CONFIRMED"
+        if (Regex("""TORNADO\s+CONFIRMED\s+(?:BY|VIA|FROM)\s+RADAR""").containsMatchIn(upper)) return "CONFIRMED"
+        if (Regex("""(?:TORNADO\s+)?DEBRIS\s+SIGNATURE""").containsMatchIn(upper)) return "CONFIRMED"
+
+        if (Regex("""(?:DOPPLER\s+)?RADAR\s+INDICATED""").containsMatchIn(upper)) return "INDICATED"
+        if (Regex("""TORNADO\s+VORTEX\s+SIGNATURE""").containsMatchIn(upper)) return "INDICATED"
+        if (Regex("""\bTVS\b""").containsMatchIn(upper)) return "INDICATED"
+
+        return null
     }
 
     private fun hasTornadoKeywords(text: String): Boolean {

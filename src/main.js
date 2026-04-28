@@ -180,6 +180,7 @@ async function fetchDetailsInBackground(products, generation) {
           product._category = SUB_TYPE_TO_CATEGORY[product._subType] || SUB_TYPE_TO_CATEGORY[code] || null;
           product._parsed = cached.parsedData;
           product._eventName = cached.parsedData.tornadoes?.[0]?.eventName || null;
+          product._radarStatus = cached.parsedData.radarStatus || null;
           changed = true;
         }
       } else if (NEEDS_CONTENT_CHECK_TYPES.has(code)) {
@@ -189,6 +190,7 @@ async function fetchDetailsInBackground(products, generation) {
           product._category = SUB_TYPE_TO_CATEGORY[product._subType] || SUB_TYPE_TO_CATEGORY[code] || null;
           product._parsed = cached.parsedData;
           product._eventName = cached.parsedData.tornadoes?.[0]?.eventName || null;
+          product._radarStatus = cached.parsedData.radarStatus || null;
           if (!allTornadoProducts.some(p => p.id === product.id)) {
             allTornadoProducts.push(product);
             changed = true;

@@ -73,6 +73,54 @@
   margin-bottom: var(--space-sm);
 }
 
+/* Radar-detected tornado banner — surfaces TVS / TDA / debris signature */
+.radar-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  margin-bottom: var(--space-sm);
+}
+
+.radar-banner__icon {
+  font-size: 18px;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+.radar-banner__label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.radar-banner__detail {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.radar-banner--indicated {
+  background: color-mix(in srgb, var(--warning) 14%, var(--bg-elevated));
+  border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+}
+
+.radar-banner--indicated .radar-banner__label {
+  color: #fde68a;
+}
+
+.radar-banner--confirmed {
+  background: color-mix(in srgb, var(--danger) 18%, var(--bg-elevated));
+  border-color: color-mix(in srgb, var(--danger) 50%, transparent);
+}
+
+.radar-banner--confirmed .radar-banner__label {
+  color: #fecaca;
+}
+
 .tornado-highlights__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));

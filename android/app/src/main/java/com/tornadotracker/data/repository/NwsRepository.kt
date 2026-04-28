@@ -145,11 +145,13 @@ class NwsRepository @Inject constructor(
         val isWarning = event.contains("Tornado Warning", ignoreCase = true)
         if (!isWatch && !isWarning) return null
 
-        val haystack = listOfNotNull(props.description, props.headline).joinToString(" ")
+        val haystack = listOfNotNull(props.description, props.headline, props.instruction).joinToString(" ")
         val isPds = haystack.contains("PARTICULARLY DANGEROUS SITUATION", ignoreCase = true)
         // Emergency only applies to warnings.
         val isEmergency = !isWatch && Regex("""TORNADO\s+EMERGENCY""", RegexOption.IGNORE_CASE)
             .containsMatchIn(haystack)
+        // Radar-derived TVS / debris signature — only meaningful for warnings.
+        val radarStatus = if (isWatch) null else parser.detectRadarStatus(haystack)
 
         val subType = when {
             isWatch && isPds -> "WATCH_TOR_PDS"
@@ -180,6 +182,7 @@ class NwsRepository @Inject constructor(
             isPDS = isPds,
             category = category,
             alert = AlertPayload(
+                radarStatus = radarStatus,
                 headline = props.headline,
                 description = props.description,
                 instruction = props.instruction,
