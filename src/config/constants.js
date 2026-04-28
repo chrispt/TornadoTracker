@@ -68,7 +68,8 @@ export const STORAGE_KEYS = {
   ACTIVE_LOCATION:     'tt_activeLocation',
   RADIUS_MILES:        'tt_radiusMiles',
   LAST_SEEN_AT:        'tt_lastSeenAt',
-  RADAR_VISIBLE:       'tt_radarVisible'
+  RADAR_VISIBLE:       'tt_radarVisible',
+  OUTLOOK_VISIBLE:     'tt_outlookVisible'
 };
 
 /** Default polling interval in ms */

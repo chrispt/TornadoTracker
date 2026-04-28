@@ -14,9 +14,11 @@ import store from '../state/store.js';
 import { CATEGORIES } from '../config/constants.js';
 import { productCache } from '../modules/productCache.js';
 import { getActiveLocation } from './locationsView.js';
+import { categoricalColor, categoricalName } from '../api/spcOutlook.js';
 
 let map = null;
 let layerGroup = null;
+let outlookLayer = null;
 let radarLayer = null;
 let radiusLayer = null;
 let hasFitOnce = false;
@@ -44,12 +46,15 @@ export function initMapView() {
 
   applyRadarVisibility();
   addRadarControl();
+  addOutlookControl();
 
   store.subscribe('products', renderMap);
   store.subscribe('selectedProductId', focusSelected);
   store.subscribe('activeLocationId', renderRadius);
   store.subscribe('radiusMiles', renderRadius);
   store.subscribe('radarVisible', applyRadarVisibility);
+  store.subscribe('outlook', renderOutlook);
+  store.subscribe('outlookVisible', renderOutlook);
 
   document.addEventListener('tt:map-toggled', () => {
     setTimeout(() => map.invalidateSize(), 50);
@@ -297,4 +302,97 @@ function refreshRadarControl() {
   const visible = !!store.get('radarVisible');
   btn.setAttribute('aria-pressed', String(visible));
   btn.classList.toggle('radar-toggle--on', visible);
+}
+
+// ── SPC outlook overlay ────────────────────────────────────────────────
+
+function renderOutlook() {
+  if (!map) return;
+
+  if (outlookLayer) {
+    map.removeLayer(outlookLayer);
+    outlookLayer = null;
+  }
+  refreshOutlookControl();
+
+  if (!store.get('outlookVisible')) return;
+  const outlook = store.get('outlook');
+  const features = outlook?.categorical || [];
+  if (features.length === 0) return;
+
+  outlookLayer = L.layerGroup();
+  features.forEach(feature => {
+    const lbl = feature?.properties?.LABEL;
+    const color = categoricalColor(lbl);
+    const layer = geoJsonToLayers(feature.geometry, {
+      color,
+      weight: 1,
+      fillColor: color,
+      fillOpacity: 0.18
+    });
+    if (layer) {
+      layer.bindTooltip(`SPC ${categoricalName(lbl)}`);
+      outlookLayer.addLayer(layer);
+    }
+  });
+  outlookLayer.addTo(map);
+
+  // Z-order: outlook above base + radar but below alert/feature layers
+  if (outlookLayer.getLayers().length) {
+    outlookLayer.getLayers().forEach(l => l.bringToBack());
+  }
+  if (radarLayer?.getContainer) {
+    // Keep radar below outlook
+    radarLayer.getContainer().style.zIndex = 250;
+  }
+}
+
+/**
+ * Convert a GeoJSON Polygon/MultiPolygon geometry into a Leaflet layer.
+ * Used for SPC outlook features which can be either type.
+ */
+function geoJsonToLayers(geometry, style) {
+  if (!geometry) return null;
+  if (geometry.type === 'Polygon') {
+    const ring = (geometry.coordinates?.[0] || []).map(([lon, lat]) => [lat, lon]);
+    return ring.length ? L.polygon(ring, style) : null;
+  }
+  if (geometry.type === 'MultiPolygon') {
+    const polys = (geometry.coordinates || [])
+      .map(poly => (poly?.[0] || []).map(([lon, lat]) => [lat, lon]))
+      .filter(ring => ring.length);
+    return polys.length ? L.polygon(polys, style) : null;
+  }
+  return null;
+}
+
+function addOutlookControl() {
+  const OutlookControl = L.Control.extend({
+    options: { position: 'topright' },
+    onAdd() {
+      const btn = L.DomUtil.create('button', 'leaflet-bar leaflet-control outlook-toggle');
+      btn.type = 'button';
+      btn.title = 'Toggle SPC Day 1 outlook';
+      btn.setAttribute('aria-pressed', String(!!store.get('outlookVisible')));
+      btn.textContent = 'Outlook';
+      L.DomEvent.on(btn, 'click', (e) => {
+        L.DomEvent.stopPropagation(e);
+        store.set('outlookVisible', !store.get('outlookVisible'));
+      });
+      this._btn = btn;
+      return btn;
+    }
+  });
+  const ctrl = new OutlookControl();
+  ctrl.addTo(map);
+  map._outlookControlBtn = ctrl._btn;
+  refreshOutlookControl();
+}
+
+function refreshOutlookControl() {
+  const btn = map?._outlookControlBtn;
+  if (!btn) return;
+  const visible = !!store.get('outlookVisible');
+  btn.setAttribute('aria-pressed', String(visible));
+  btn.classList.toggle('outlook-toggle--on', visible);
 }

@@ -27,6 +27,10 @@ const initialState = {
   mapVisible: true,
   // New: NEXRAD radar overlay visibility (off by default — bandwidth)
   radarVisible: false,
+  // New: SPC Day 1 categorical outlook overlay (on by default — light)
+  outlookVisible: true,
+  // New: most recent outlook payload from SPC
+  outlook: null,
   // New: offline mode flag
   isOffline: false
 };
@@ -38,7 +42,8 @@ const PERSISTED_KEYS = [
   'activeLocationId',
   'radiusMiles',
   'lastSeenAt',
-  'radarVisible'
+  'radarVisible',
+  'outlookVisible'
 ];
 
 const KEY_TO_STORAGE = {
@@ -48,7 +53,8 @@ const KEY_TO_STORAGE = {
   activeLocationId: STORAGE_KEYS.ACTIVE_LOCATION,
   radiusMiles: STORAGE_KEYS.RADIUS_MILES,
   lastSeenAt: STORAGE_KEYS.LAST_SEEN_AT,
-  radarVisible: STORAGE_KEYS.RADAR_VISIBLE
+  radarVisible: STORAGE_KEYS.RADAR_VISIBLE,
+  outlookVisible: STORAGE_KEYS.OUTLOOK_VISIBLE
 };
 
 class Store {
@@ -158,6 +164,9 @@ class Store {
 
     const radar = tryParse(STORAGE_KEYS.RADAR_VISIBLE, null);
     if (typeof radar === 'boolean') this._state.radarVisible = radar;
+
+    const outlook = tryParse(STORAGE_KEYS.OUTLOOK_VISIBLE, null);
+    if (typeof outlook === 'boolean') this._state.outlookVisible = outlook;
   }
 
   _persistToStorage(key, value) {

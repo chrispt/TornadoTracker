@@ -131,6 +131,29 @@
   border-color: #166534;
 }
 
+.outlook-toggle {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.6;
+}
+
+.outlook-toggle:hover {
+  background: var(--bg-card-hover);
+}
+
+.outlook-toggle--on {
+  background: #422006;
+  color: #fed7aa;
+  border-color: #6c3008;
+}
+
 /* Detail header actions */
 .detail-view__header {
   display: flex;

@@ -1,13 +1,16 @@
 import store from '../state/store.js';
 import { CATEGORIES } from '../config/constants.js';
+import {
+  highestCategorical, categoricalName, categoricalColor, highestTornadoProb
+} from '../api/spcOutlook.js';
 
 /**
- * Stats bar — summary counts by category. When an active tornado emergency
- * is in the feed, render an emphasized banner at the front of the bar
- * with role=alert / aria-live=assertive so screen readers announce it.
+ * Stats bar — summary counts by category, the today's-outlook chip, and an
+ * emphasized banner when an active tornado emergency is in the feed.
  */
 export function initStatsBar() {
   store.subscribe('products', renderStats);
+  store.subscribe('outlook', renderStats);
 }
 
 function renderStats() {
@@ -32,6 +35,25 @@ function renderStats() {
         <span>${emergencyCount} Active Tornado Emergency${emergencyCount > 1 ? 's' : ''}</span>
       </div>
     `;
+  }
+
+  // SPC Day 1 outlook summary chip — "today's threat level"
+  const outlook = store.get('outlook');
+  if (outlook?.categorical?.length) {
+    const cat = highestCategorical(outlook.categorical);
+    const torProb = highestTornadoProb(outlook.tornado || []);
+    if (cat) {
+      const color = categoricalColor(cat);
+      const label = categoricalName(cat);
+      const torText = torProb > 0 ? ` · Tornado ${torProb}%` : '';
+      html += `
+        <div class="stats-bar__outlook"
+             title="SPC Day 1 Convective Outlook${torText}">
+          <span class="stats-bar__outlook-chip" style="background:${color};">SPC</span>
+          <span>${label}${torText}</span>
+        </div>
+      `;
+    }
   }
 
   html += `

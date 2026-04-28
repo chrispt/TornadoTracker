@@ -7,6 +7,7 @@ import store from './state/store.js';
 import { fetchMultipleProductTypes } from './api/nwsProducts.js';
 import { fetchProductDetail } from './api/nwsProducts.js';
 import { fetchActiveAlerts } from './api/nwsAlerts.js';
+import { fetchDay1Outlook } from './api/spcOutlook.js';
 import { parseProductText } from './utils/textParser.js';
 import { productCache } from './modules/productCache.js';
 import { idbSaveFeedSnapshot, idbLoadFeedSnapshot } from './modules/idbCache.js';
@@ -24,12 +25,14 @@ import { initRouter } from './ui/router.js';
 
 let pollTimer = null;
 let alertsTimer = null;
+let outlookTimer = null;
 let currentOffice = '';
 let fetchGeneration = 0;
 let allTornadoProducts = [];
 let snapshotTimer = null;
 
 const ALERTS_POLL_INTERVAL = 30000; // 30s — alerts cadence
+const OUTLOOK_POLL_INTERVAL = 30 * 60 * 1000; // 30 min — SPC updates ~6x/day
 const SNAPSHOT_DEBOUNCE_MS = 1000;
 
 /** Debounced snapshot save — coalesces bursts of background-batch updates. */
@@ -61,9 +64,10 @@ async function init() {
   // Hydrate from IDB snapshot before first network fetch — instant feed
   await hydrateFromSnapshot();
 
-  await Promise.allSettled([refreshProducts(), refreshAlerts()]);
+  await Promise.allSettled([refreshProducts(), refreshAlerts(), refreshOutlook()]);
   startPolling();
   startAlertsPolling();
+  startOutlookPolling();
 }
 
 async function hydrateFromSnapshot() {
@@ -308,6 +312,20 @@ function stopPolling() {
 function startAlertsPolling() {
   if (alertsTimer) clearInterval(alertsTimer);
   alertsTimer = setInterval(() => refreshAlerts(), ALERTS_POLL_INTERVAL);
+}
+
+async function refreshOutlook() {
+  try {
+    const outlook = await fetchDay1Outlook();
+    store.set('outlook', outlook);
+  } catch (e) {
+    console.warn('SPC outlook fetch failed:', e);
+  }
+}
+
+function startOutlookPolling() {
+  if (outlookTimer) clearInterval(outlookTimer);
+  outlookTimer = setInterval(() => refreshOutlook(), OUTLOOK_POLL_INTERVAL);
 }
 
 // ── Tab Switching ─────────────────────────────
