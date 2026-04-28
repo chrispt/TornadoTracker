@@ -41,10 +41,19 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 6px;
+  padding: 3px 6px 3px 10px;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   background: var(--bg-card);
+  transition: border-color var(--transition-fast);
+}
+
+.locations:hover {
+  border-color: var(--border-light);
+}
+
+.locations:focus-within {
+  border-color: var(--accent);
 }
 
 .locations__select {
@@ -87,71 +96,86 @@
   color: var(--text-secondary);
 }
 
-/* New-card badge */
-.product-card {
-  position: relative;
+/* Map controls — Leaflet zoom + custom toggle buttons.
+   Override Leaflet's default white styling for the dark theme. */
+.leaflet-bar {
+  border: 1px solid var(--border-color) !important;
+  background: var(--bg-secondary) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: var(--shadow-card) !important;
+  overflow: hidden;
 }
 
-.product-card--new {
-  background: color-mix(in srgb, var(--accent) 8%, var(--bg-card));
+.leaflet-bar a,
+.leaflet-bar a:hover {
+  background: var(--bg-secondary) !important;
+  color: var(--text-secondary) !important;
+  border-bottom-color: var(--border-color) !important;
+  font-weight: 500;
 }
 
-.product-card__new-dot {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+.leaflet-bar a:hover {
+  background: var(--bg-card-hover) !important;
+  color: var(--text-primary) !important;
 }
 
-/* Radar toggle (Leaflet custom control button) */
-.radar-toggle {
+.leaflet-bar a.leaflet-disabled {
+  background: var(--bg-secondary) !important;
+  color: var(--text-faint) !important;
+}
+
+/* Custom toggle buttons (radar / outlook) */
+.radar-toggle,
+.outlook-toggle {
   background: var(--bg-secondary);
-  color: var(--text-primary);
+  color: var(--text-secondary);
   border: 1px solid var(--border-color);
-  padding: 4px 10px;
+  padding: 6px 12px;
   font-size: 12px;
   font-weight: 600;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-family: inherit;
-  line-height: 1.6;
+  line-height: 1.4;
+  letter-spacing: 0.2px;
+  display: block;
+  margin-bottom: 4px;
+  box-shadow: var(--shadow-card);
+  transition: background var(--transition-fast),
+              border-color var(--transition-fast),
+              color var(--transition-fast);
 }
 
-.radar-toggle:hover {
+.radar-toggle:hover,
+.outlook-toggle:hover {
   background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border-light);
 }
 
 .radar-toggle--on {
-  background: #14532d;
-  color: #bbf7d0;
-  border-color: #166534;
-}
-
-.outlook-toggle {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: inherit;
-  line-height: 1.6;
-}
-
-.outlook-toggle:hover {
-  background: var(--bg-card-hover);
+  background: color-mix(in srgb, #22d3ee 18%, var(--bg-secondary));
+  color: #a5f3fc;
+  border-color: color-mix(in srgb, #22d3ee 45%, var(--border-color));
 }
 
 .outlook-toggle--on {
-  background: #422006;
+  background: color-mix(in srgb, var(--warning) 18%, var(--bg-secondary));
   color: #fed7aa;
-  border-color: #6c3008;
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--border-color));
+}
+
+/* Leaflet attribution — calmer look */
+.leaflet-control-attribution {
+  background: color-mix(in srgb, var(--bg-secondary) 85%, transparent) !important;
+  color: var(--text-faint) !important;
+  font-size: 10px !important;
+  padding: 2px 6px !important;
+  border-radius: 4px 0 0 0;
+}
+
+.leaflet-control-attribution a {
+  color: var(--text-muted) !important;
 }
 
 /* Detail header actions */

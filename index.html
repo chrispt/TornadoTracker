@@ -35,8 +35,17 @@
     <!-- Stats bar -->
     <div class="stats-bar" id="stats-bar" aria-live="polite"></div>
 
-    <!-- Sidebar: feed + search -->
+    <!-- Sidebar: filters → scope → tabs → feed/search -->
     <div class="sidebar" id="sidebar">
+      <div class="sidebar__filters">
+        <div class="sidebar__chips" id="type-filters" role="group" aria-label="Category filters"></div>
+        <div class="sidebar__scope">
+          <div id="locations-host"></div>
+          <input type="text" id="office-filter" class="app-header__office"
+            placeholder="Office"
+            aria-label="Filter by NWS office code (e.g. KBMX)" />
+        </div>
+      </div>
       <div class="sidebar__tabs" role="tablist">
         <button class="sidebar__tab sidebar__tab--active" data-tab="feed" role="tab" aria-selected="true">Feed</button>
         <button class="sidebar__tab" data-tab="search" role="tab" aria-selected="false">Search</button>

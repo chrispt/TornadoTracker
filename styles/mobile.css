@@ -25,86 +25,40 @@
 }
 
 @media (max-width: 768px) {
-  /* ── Header: collapse to two rows ────────────────────────────────────
-     Row 1: title + offline-pill + refresh + status
-     Row 2: filter chips (horizontal scroll)
-     Row 3: locations + office (compact)
-     Map toggle hidden — main-panel is already hidden on mobile.
-  */
+  /* ── Header: just brand + refresh on mobile.
+     Filter chips and scope live in the sidebar. */
   .app-header__map-toggle {
     display: none;
   }
 
   .app-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-xs);
-    padding-bottom: var(--space-xs);
-  }
-
-  .app-header__title {
-    display: flex;
-    align-items: center;
+    padding: 8px var(--space-sm);
     gap: var(--space-sm);
   }
 
-  .app-header__controls {
-    display: contents;
-    /* Children become direct grid items of .app-header */
+  .app-header__title {
+    font-size: var(--text-lg);
   }
 
-  .app-header__filters {
-    /* Horizontal-scroll row of chips */
-    display: flex;
+  .app-header__mark {
+    font-size: 18px;
+  }
+
+  .app-header__actions {
     gap: var(--space-xs);
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    margin: 0 calc(var(--space-sm) * -1);
-    padding: 2px var(--space-sm);
   }
 
-  .filter-chip {
-    flex-shrink: 0;
-    /* Larger touch target — 36px+ tall */
-    padding: 8px 14px;
-    min-height: 36px;
-  }
-
-  /* Locations + office on one row, equal-share */
-  #locations-host {
-    flex: 1;
-  }
-
-  .locations {
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .locations__select {
-    flex: 1;
-    min-width: 0;
-    max-width: none;
-  }
-
-  #office-filter {
-    width: 110px !important;
-    min-height: 36px;
-  }
-
-  /* Refresh button + status: pin status next to title, compact button */
   #refresh-btn {
     min-height: 36px;
   }
 
   .app-header__status {
     font-size: 11px;
-    text-align: right;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    max-width: 100px;
   }
 
   .offline-pill {
@@ -112,9 +66,40 @@
     padding: 2px 8px;
   }
 
-  /* ── Filter chips: keyboard fix + tighter visuals ─────────────────── */
-  /* The label was getting tabindex="0" by JS — drop it; the inner checkbox
-     is already focusable and that's where the keyboard event fires. */
+  /* Sidebar filter panel: chips horizontal-scroll, scope on its own row */
+  .sidebar__filters {
+    padding: 10px var(--space-sm);
+  }
+
+  .sidebar__chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin: 0 calc(var(--space-sm) * -1);
+    padding: 2px var(--space-sm);
+  }
+
+  .sidebar__chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-chip {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    min-height: 34px;
+  }
+
+  .sidebar__scope {
+    margin-top: 8px;
+  }
+
+  .app-header__office {
+    width: 90px !important;
+    min-height: 36px;
+    font-size: 12px;
+  }
+
   .filter-chip {
     -webkit-tap-highlight-color: transparent;
   }
@@ -123,10 +108,9 @@
     transform: scale(0.97);
   }
 
-  /* ── Stats bar: smaller, tighter ──────────────────────────────────── */
   .stats-bar {
     font-size: 11px;
-    padding: 4px var(--space-sm);
+    padding: 6px var(--space-sm);
   }
 
   /* ── Sidebar tabs: equal-width, taller ─────────────────────────────── */

@@ -62,8 +62,12 @@ function renderDetail() {
   if (!detail) {
     panel.innerHTML = `
       <div class="detail-empty-state">
-        <div class="detail-empty-state__icon">&#x1F32A;</div>
+        <div class="detail-empty-state__icon" aria-hidden="true">&#x1F32A;</div>
         <div class="detail-empty-state__text">Select a product to view details</div>
+        <div class="detail-empty-state__hint">
+          Tap a card or a polygon on the map to see the full report,
+          parsed highlights, and a shareable link.
+        </div>
       </div>
     `;
     return;

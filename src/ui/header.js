@@ -2,18 +2,24 @@ import store from '../state/store.js';
 import { CATEGORIES } from '../config/constants.js';
 import { formatDate, timeAgo } from '../utils/formatting.js';
 
+/**
+ * Render the (now-minimal) app header: brand + offline pill + map toggle
+ * + refresh + status. The category filter chips and scope (location +
+ * office) controls live in the sidebar — see index.html.
+ */
 export function initHeader() {
   const header = document.getElementById('app-header');
   if (!header) return;
 
   header.innerHTML = `
-    <div class="app-header__title">TornadoTracker</div>
-    <div class="app-header__controls">
-      <div class="app-header__filters" id="type-filters" role="group" aria-label="Category filters"></div>
-      <div id="locations-host"></div>
-      <input type="text" id="office-filter" placeholder="Office (e.g. KBMX)"
-        aria-label="Filter by NWS office code"
-        style="width:130px;" />
+    <div class="app-header__brand">
+      <span class="app-header__mark" aria-hidden="true">&#x1F32A;</span>
+      <span class="app-header__title">TornadoTracker</span>
+    </div>
+    <div class="app-header__actions">
+      <span class="offline-pill hidden" id="offline-pill" role="status">
+        Offline
+      </span>
       <button class="btn btn--ghost btn--sm app-header__map-toggle" id="map-toggle-btn"
         aria-label="Toggle map" aria-pressed="true">
         Map
@@ -21,9 +27,6 @@ export function initHeader() {
       <button class="btn btn--primary btn--sm" id="refresh-btn" aria-label="Refresh now">
         Refresh
       </button>
-      <span class="offline-pill hidden" id="offline-pill" role="status">
-        Offline — cached data
-      </span>
       <span class="app-header__status" id="refresh-status"
         role="status" aria-live="polite"></span>
     </div>
@@ -32,7 +35,7 @@ export function initHeader() {
   renderCategoryFilters();
 
   const officeInput = document.getElementById('office-filter');
-  officeInput.addEventListener('change', () => {
+  officeInput?.addEventListener('change', () => {
     const value = officeInput.value.trim().toUpperCase();
     officeInput.value = value;
     document.dispatchEvent(new CustomEvent('tt:office-changed', { detail: value }));
@@ -65,24 +68,20 @@ export function initHeader() {
     const pill = document.getElementById('offline-pill');
     if (pill) pill.classList.toggle('hidden', !offline);
   });
-  // Initial paint
-  const initOffline = store.get('isOffline');
-  if (initOffline) document.getElementById('offline-pill')?.classList.remove('hidden');
+  if (store.get('isOffline')) document.getElementById('offline-pill')?.classList.remove('hidden');
 }
 
 function updateStatus() {
   const el = document.getElementById('refresh-status');
   if (!el) return;
   const time = store.get('lastFetchTime');
-  if (!time) {
-    el.textContent = '';
-    return;
-  }
+  if (!time) { el.textContent = ''; return; }
   const ago = timeAgo(time);
   if (store.get('isLoading')) {
-    el.textContent = `Updating… (last ${ago})`;
+    el.textContent = `Updating…`;
+    el.title = `Last fetched ${ago}`;
   } else {
-    el.textContent = `Updated ${ago}`;
+    el.textContent = ago;
     el.title = formatDate(time);
   }
 }

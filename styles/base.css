@@ -12,6 +12,9 @@ html, body {
   background: var(--bg-primary);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv11', 'ss03', 'tnum';
+  letter-spacing: -0.005em;
 }
 
 a {
@@ -75,10 +78,13 @@ input:focus, select:focus {
 .btn--ghost {
   background: transparent;
   border: 1px solid var(--border-color);
+  color: var(--text-secondary);
 }
 
 .btn--ghost:hover {
   background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-light);
 }
 
 .btn--sm {

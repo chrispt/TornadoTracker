@@ -3,132 +3,155 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 4px 0;
+  padding: 6px 0 var(--space-md);
 }
 
 .product-card {
+  position: relative;
   display: flex;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  margin: 0 8px;
+  gap: 10px;
+  padding: 10px 14px;
+  margin: 0 10px;
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   background: var(--bg-card);
   box-shadow: var(--shadow-card);
   cursor: pointer;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
-  animation: cardEnter 250ms ease both;
-}
-
-/* Emergency: red border + subtle glow so it stands out among warnings */
-.product-card--emergency {
-  border-left: 3px solid var(--danger);
-  background: color-mix(in srgb, var(--danger) 12%, var(--bg-card));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--danger) 30%, transparent),
-              0 4px 12px color-mix(in srgb, var(--danger) 20%, rgba(0,0,0,0.4));
-}
-
-.product-card--emergency .product-card__office {
-  color: #fecaca;
-}
-
-/* Watch: subtle amber tint to differentiate from warnings */
-.product-card--watch {
-  border-left: 3px solid var(--warning);
+  transition: background var(--transition-fast),
+              border-color var(--transition-fast),
+              box-shadow var(--transition-fast),
+              transform var(--transition-fast);
+  animation: cardEnter 220ms ease both;
 }
 
 .product-card:hover {
   background: var(--bg-card-hover);
+  border-color: var(--border-light);
   box-shadow: var(--shadow-card-hover);
   transform: translateY(-1px);
 }
 
 .product-card--selected {
   background: var(--bg-card-selected);
-  box-shadow: inset 4px 0 0 var(--accent), var(--shadow-card);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent),
+              0 4px 16px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.product-card--selected::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
+}
+
+/* Emergency: red border + subtle glow so it stands out among warnings */
+.product-card--emergency {
+  border-color: color-mix(in srgb, var(--danger) 50%, var(--border-color));
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--danger) 10%, var(--bg-card)) 0%,
+    var(--bg-card) 100%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--danger) 25%, transparent),
+              0 4px 16px color-mix(in srgb, var(--danger) 15%, rgba(0,0,0,0.4));
+}
+
+.product-card--emergency .product-card__office {
+  color: #fecaca;
+}
+
+/* Watch: subtle amber accent */
+.product-card--watch {
+  border-left: 3px solid var(--warning);
+  padding-left: 11px;
 }
 
 @keyframes cardEnter {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .product-card__type-badge {
   flex-shrink: 0;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  font-size: 11px;
-  font-weight: 700;
-  font-family: var(--font-mono);
-  color: white;
   align-self: flex-start;
   margin-top: 2px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  letter-spacing: 0.4px;
+  color: white;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .product-card__body {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.product-card__top-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .product-card__office {
-  font-weight: 600;
+  font-weight: 700;
   font-size: 13px;
-}
-
-.product-card__time {
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
   font-family: var(--font-mono);
+  color: var(--text-primary);
+  letter-spacing: 0.3px;
 }
 
-.product-card__preview {
-  font-size: 13px;
-  color: var(--text-secondary);
+.product-card__subtype {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.2px;
+}
+
+.product-card__headline {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
   overflow: hidden;
+  text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   margin-top: 2px;
 }
 
-.product-card__tornado-badge {
-  display: inline-block;
-  padding: 1px 5px;
-  border-radius: 3px;
-  font-size: 10px;
-  font-weight: 700;
-  font-family: var(--font-mono);
-  margin-left: var(--space-xs);
-}
-
-.product-card__subtype {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  letter-spacing: 0.3px;
-}
-
-.product-card__event-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
+.product-card__time {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
   margin-top: 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.product-card__pds-badge {
-  display: inline-block;
-  padding: 1px 5px;
-  border-radius: 3px;
-  font-size: 10px;
-  font-weight: 700;
-  font-family: var(--font-mono);
-  background: #dc2626;
-  color: white;
-  letter-spacing: 0.5px;
+.product-card__new-dot {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.product-card--new {
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-card));
 }
 
 /* Empty state */
@@ -138,15 +161,16 @@
   align-items: center;
   justify-content: center;
   padding: var(--space-xl);
-  min-height: 200px;
+  min-height: 240px;
   color: var(--text-muted);
   text-align: center;
   gap: var(--space-sm);
 }
 
 .feed-empty__icon {
-  font-size: 48px;
-  opacity: 0.3;
+  font-size: 44px;
+  opacity: 0.35;
+  filter: saturate(0.6);
 }
 
 .feed-empty__title {
@@ -157,7 +181,9 @@
 
 .feed-empty__subtitle {
   font-size: var(--text-sm);
-  color: var(--text-muted);
+  color: var(--text-faint);
+  max-width: 280px;
+  line-height: 1.5;
 }
 
 /* Loading indicator */
@@ -172,7 +198,7 @@
 @media (max-width: 768px) {
   .product-card {
     margin: 0 var(--space-xs);
-    padding: var(--space-sm);
+    padding: 10px 12px;
     min-height: 44px;
   }
 
@@ -180,7 +206,7 @@
     transform: none;
   }
 
-  .product-card__preview {
-    -webkit-line-clamp: 1;
+  .product-card__headline {
+    -webkit-line-clamp: 2;
   }
 }
