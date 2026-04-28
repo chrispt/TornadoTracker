@@ -8,6 +8,7 @@ import { fetchMultipleProductTypes } from './api/nwsProducts.js';
 import { fetchProductDetail } from './api/nwsProducts.js';
 import { fetchActiveAlerts } from './api/nwsAlerts.js';
 import { fetchDay1Outlook } from './api/spcOutlook.js';
+import { fetchTvsMarkers } from './api/iemStormAttributes.js';
 import { parseProductText } from './utils/textParser.js';
 import { productCache } from './modules/productCache.js';
 import { idbSaveFeedSnapshot, idbLoadFeedSnapshot } from './modules/idbCache.js';
@@ -26,6 +27,7 @@ import { initRouter } from './ui/router.js';
 let pollTimer = null;
 let alertsTimer = null;
 let outlookTimer = null;
+let tvsTimer = null;
 let currentOffice = '';
 let fetchGeneration = 0;
 let allTornadoProducts = [];
@@ -33,6 +35,7 @@ let snapshotTimer = null;
 
 const ALERTS_POLL_INTERVAL = 30000; // 30s — alerts cadence
 const OUTLOOK_POLL_INTERVAL = 30 * 60 * 1000; // 30 min — SPC updates ~6x/day
+const TVS_POLL_INTERVAL = 60000; // 60s — radar volume scans complete every ~5min
 const SNAPSHOT_DEBOUNCE_MS = 1000;
 
 /** Debounced snapshot save — coalesces bursts of background-batch updates. */
@@ -64,10 +67,11 @@ async function init() {
   // Hydrate from IDB snapshot before first network fetch — instant feed
   await hydrateFromSnapshot();
 
-  await Promise.allSettled([refreshProducts(), refreshAlerts(), refreshOutlook()]);
+  await Promise.allSettled([refreshProducts(), refreshAlerts(), refreshOutlook(), refreshTvs()]);
   startPolling();
   startAlertsPolling();
   startOutlookPolling();
+  startTvsPolling();
 }
 
 async function hydrateFromSnapshot() {
@@ -328,6 +332,21 @@ async function refreshOutlook() {
 function startOutlookPolling() {
   if (outlookTimer) clearInterval(outlookTimer);
   outlookTimer = setInterval(() => refreshOutlook(), OUTLOOK_POLL_INTERVAL);
+}
+
+async function refreshTvs() {
+  try {
+    const { markers, error } = await fetchTvsMarkers();
+    if (error) console.warn('IEM TVS fetch failed:', error.message || error);
+    store.set('tvsMarkers', markers);
+  } catch (e) {
+    console.warn('IEM TVS fetch failed:', e);
+  }
+}
+
+function startTvsPolling() {
+  if (tvsTimer) clearInterval(tvsTimer);
+  tvsTimer = setInterval(() => refreshTvs(), TVS_POLL_INTERVAL);
 }
 
 // ── Tab Switching ─────────────────────────────

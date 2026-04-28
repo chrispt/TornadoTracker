@@ -20,6 +20,7 @@ let map = null;
 let layerGroup = null;
 let outlookLayer = null;
 let radarLayer = null;
+let tvsLayer = null;
 let radiusLayer = null;
 let hasFitOnce = false;
 const markersById = new Map();
@@ -55,6 +56,7 @@ export function initMapView() {
   store.subscribe('radarVisible', applyRadarVisibility);
   store.subscribe('outlook', renderOutlook);
   store.subscribe('outlookVisible', renderOutlook);
+  store.subscribe('tvsMarkers', renderTvsMarkers);
 
   document.addEventListener('tt:map-toggled', () => {
     setTimeout(() => map.invalidateSize(), 50);
@@ -395,4 +397,34 @@ function refreshOutlookControl() {
   const visible = !!store.get('outlookVisible');
   btn.setAttribute('aria-pressed', String(visible));
   btn.classList.toggle('outlook-toggle--on', visible);
+}
+
+// ── TVS markers ───────────────────────────────────────────────────────
+
+function renderTvsMarkers() {
+  if (!map) return;
+
+  if (tvsLayer) {
+    map.removeLayer(tvsLayer);
+    tvsLayer = null;
+  }
+
+  const markers = store.get('tvsMarkers') || [];
+  if (markers.length === 0) return;
+
+  tvsLayer = L.layerGroup();
+  markers.forEach(m => {
+    const dot = L.circleMarker([m.lat, m.lon], {
+      radius: 8,
+      color: '#fbbf24',
+      weight: 2,
+      fillColor: '#fbbf24',
+      fillOpacity: 0.0,
+      className: 'tvs-marker'
+    });
+    const tooltip = `📡 TVS · ${m.radar}${m.time ? ` · ${m.time}` : ''}`;
+    dot.bindTooltip(tooltip, { permanent: false, direction: 'top' });
+    tvsLayer.addLayer(dot);
+  });
+  tvsLayer.addTo(map);
 }

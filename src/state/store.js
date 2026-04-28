@@ -31,6 +31,8 @@ const initialState = {
   outlookVisible: true,
   // New: most recent outlook payload from SPC
   outlook: null,
+  // New: current TVS markers from Iowa Environmental Mesonet's NEXRAD feed
+  tvsMarkers: [],
   // New: offline mode flag
   isOffline: false
 };

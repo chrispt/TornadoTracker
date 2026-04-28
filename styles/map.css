@@ -165,6 +165,16 @@
   border-color: color-mix(in srgb, var(--warning) 45%, var(--border-color));
 }
 
+/* TVS marker — subtle pulsing amber ring at each Doppler-detected vortex */
+.tvs-marker {
+  animation: pulse-tvs 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse-tvs {
+  0%, 100% { stroke-opacity: 0.85; stroke-width: 2; }
+  50%      { stroke-opacity: 0.35; stroke-width: 6; }
+}
+
 /* Leaflet attribution — calmer look */
 .leaflet-control-attribution {
   background: color-mix(in srgb, var(--bg-secondary) 85%, transparent) !important;

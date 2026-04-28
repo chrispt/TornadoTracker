@@ -20,14 +20,27 @@ function renderStats() {
   const products = store.get('products') || [];
 
   const catCounts = {};
+  // Count radar status only on the live-alert pipeline (ALERT/EMERGENCY)
+  // categories. Otherwise we double-count: every active warning has both a
+  // /products/TOR entry (category WARNING/PDS) AND an /alerts/active entry
+  // (category ALERT/EMERGENCY) — same event, two records.
   let radarConfirmed = 0;
   let radarIndicated = 0;
   products.forEach(p => {
     const cat = p._category || 'UNKNOWN';
     catCounts[cat] = (catCounts[cat] || 0) + 1;
+    const isAlertSource = cat === 'ALERT' || cat === 'EMERGENCY';
+    if (!isAlertSource) return;
     if (p._radarStatus === 'CONFIRMED') radarConfirmed++;
     else if (p._radarStatus === 'INDICATED') radarIndicated++;
   });
+
+  // Prefer true TVS markers from IEM if they're available; fall back to
+  // the deduped warning-text-derived count.
+  const tvsMarkers = store.get('tvsMarkers');
+  if (Array.isArray(tvsMarkers) && tvsMarkers.length > 0) {
+    radarIndicated = tvsMarkers.length;
+  }
 
   let html = '';
 
