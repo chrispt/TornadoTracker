@@ -52,9 +52,10 @@ function renderStats() {
     `;
   } else if (radarIndicated > 0) {
     html += `
-      <div class="stats-bar__radar stats-bar__radar--indicated" role="status" aria-live="polite">
+      <div class="stats-bar__radar stats-bar__radar--indicated" role="status" aria-live="polite"
+           title="Tornado Vortex Signature flagged by Doppler radar">
         <span class="stats-bar__radar-icon" aria-hidden="true">📡</span>
-        <span><strong>${radarIndicated}</strong> Radar Indicated &middot; TVS detected</span>
+        <span><strong>${radarIndicated}</strong> TVS Detected</span>
       </div>
     `;
   }

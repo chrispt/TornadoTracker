@@ -34,7 +34,7 @@ export function renderProductCard(product, isSelected = false, opts = {}) {
 
   const radarLabel = product._radarStatus === 'CONFIRMED'
     ? 'radar confirmed'
-    : product._radarStatus === 'INDICATED' ? 'radar indicated' : null;
+    : product._radarStatus === 'INDICATED' ? 'TVS detected' : null;
   const ariaLabel = [badgeLabel, radarLabel, headline, `from ${office}`, time, isNew && 'new']
     .filter(Boolean).join(', ');
 
@@ -63,9 +63,12 @@ export function renderProductCard(product, isSelected = false, opts = {}) {
 
 function renderRadarPill(status) {
   if (!status) return '';
-  const label = status === 'CONFIRMED' ? 'Radar Confirmed' : 'Radar Indicated';
+  const label = status === 'CONFIRMED' ? 'Radar Confirmed' : 'TVS Detected';
   const cls = status === 'CONFIRMED' ? 'radar-pill--confirmed' : 'radar-pill--indicated';
-  return `<span class="radar-pill ${cls}" title="Radar-detected tornado signature (TVS)">
+  const title = status === 'CONFIRMED'
+    ? 'Doppler radar shows tornado debris signature or visual confirmation'
+    : 'Tornado Vortex Signature flagged by Doppler radar';
+  return `<span class="radar-pill ${cls}" title="${title}">
     <span class="radar-pill__icon" aria-hidden="true">📡</span>${label}
   </span>`;
 }

@@ -132,10 +132,10 @@ function renderDetail() {
 function renderRadarBanner(status) {
   if (!status) return '';
   const isConfirmed = status === 'CONFIRMED';
-  const label = isConfirmed ? 'Radar Confirmed Tornado' : 'Radar Indicated';
+  const label = isConfirmed ? 'Radar Confirmed Tornado' : 'TVS Detected';
   const detail = isConfirmed
-    ? 'Doppler radar shows debris signature or visual confirmation.'
-    : 'Tornado vortex signature (TVS) detected by Doppler radar — no visual confirmation yet.';
+    ? 'Doppler radar shows a debris signature or has been confirmed visually.'
+    : 'Tornado Vortex Signature flagged by Doppler radar — rotation aloft, no visual confirmation yet.';
   const cls = isConfirmed ? 'radar-banner--confirmed' : 'radar-banner--indicated';
   return `
     <div class="radar-banner ${cls}" role="note">
