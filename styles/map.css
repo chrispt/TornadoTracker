@@ -1,10 +1,19 @@
 /* Map panel + locations + new-card badge + toast */
 
-/* Make the main panel split between map (top) and detail (bottom) */
-.main-panel {
-  display: grid;
-  grid-template-rows: 40% 60%;
-  min-height: 0;
+/* Desktop only: split the main panel between map (top) and detail (bottom).
+   On mobile the main panel is hidden (per main.css) until a card is tapped,
+   so we don't override its display rules here. */
+@media (min-width: 769px) {
+  .main-panel {
+    display: grid;
+    grid-template-rows: 40% 60%;
+    min-height: 0;
+  }
+
+  /* When the map is hidden, detail panel takes the whole main panel */
+  .main-panel:has(.main-panel__map-wrapper.hidden) {
+    grid-template-rows: 1fr;
+  }
 }
 
 .main-panel__map-wrapper {
@@ -25,11 +34,6 @@
 
 .main-panel__detail {
   min-height: 0;
-}
-
-/* When the map is hidden, detail panel takes the whole main panel */
-.main-panel:has(.main-panel__map-wrapper.hidden) {
-  grid-template-rows: 1fr;
 }
 
 /* Locations control */
@@ -120,11 +124,10 @@
   to   { opacity: 1; transform: translate(-50%, 0); }
 }
 
-/* Mobile: stack map below feed in the same single-column flow */
+/* Mobile: hide the map entirely — the main panel is already hidden by
+   main.css until a card is tapped, so this just ensures the detail-only
+   view (when shown) doesn't include the map. */
 @media (max-width: 768px) {
-  .main-panel {
-    grid-template-rows: 1fr;
-  }
   .main-panel__map-wrapper {
     display: none;
   }
