@@ -428,8 +428,14 @@ function renderStormCells() {
 
 function buildStormCellMarker(cell) {
   const tier = cellTier(cell);
+  // Larger markers for higher-tier cells; the tap-target ends up larger
+  // than the visible radius thanks to Leaflet's touch tolerance.
+  const radius = tier === 'tvs' ? 11
+               : tier === 'meso' ? 8
+               : tier === 'hail' ? 7
+               : 6;
   const marker = L.circleMarker([cell.lat, cell.lon], {
-    radius: tier === 'tvs' ? 9 : 6,
+    radius,
     color: tier === 'tvs' ? '#ef4444'
          : tier === 'meso' ? '#f97316'
          : tier === 'hail' ? '#facc15'

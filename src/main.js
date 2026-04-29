@@ -362,14 +362,24 @@ function setupTabSwitching() {
       tab.classList.add('sidebar__tab--active');
 
       const target = tab.dataset.tab;
+      // Map tab is mobile-only and shows the map panel as a full-screen
+      // takeover; on desktop, the map is always visible so this branch
+      // is unreachable through the normal UI.
+      document.body.classList.toggle('tt-map-mode', target === 'map');
+
       if (target === 'feed') {
         feedContainer.classList.remove('hidden');
         searchContainer.classList.add('hidden');
         store.set('activeView', 'feed');
-      } else {
+      } else if (target === 'search') {
         feedContainer.classList.add('hidden');
         searchContainer.classList.remove('hidden');
         store.set('activeView', 'search');
+      } else if (target === 'map') {
+        store.set('activeView', 'map');
+        // Leaflet renders a 0×0 canvas if the container was hidden when
+        // the map was created — invalidateSize after the layout settles.
+        document.dispatchEvent(new CustomEvent('tt:map-toggled', { detail: true }));
       }
     });
   });

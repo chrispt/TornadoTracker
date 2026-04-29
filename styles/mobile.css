@@ -24,10 +24,58 @@
   }
 }
 
+/* The "Map" tab in the sidebar is mobile-only — desktop already shows
+   the map alongside the feed, so the tab is hidden there. */
+.sidebar__tab--mobile-only {
+  display: none;
+}
+
 @media (max-width: 768px) {
   /* ── Header: just brand + refresh on mobile.
      Filter chips and scope live in the sidebar. */
   .app-header__map-toggle {
+    display: none;
+  }
+
+  .sidebar__tab--mobile-only {
+    display: block;
+  }
+
+  /* ── Map mode: the Map tab takes over the viewport on mobile.
+       Hide sidebar content + filter panel, show the main panel with
+       only the map (detail panel hidden). */
+  body.tt-map-mode .sidebar__filters,
+  body.tt-map-mode .sidebar__content {
+    display: none;
+  }
+
+  body.tt-map-mode #app {
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas:
+      "header"
+      "stats"
+      "sidebar"
+      "main";
+  }
+
+  body.tt-map-mode .sidebar {
+    /* Tabs stay visible so user can switch back to Feed/Search */
+    grid-area: sidebar;
+    flex: 0 0 auto;
+  }
+
+  body.tt-map-mode .main-panel {
+    display: flex;
+    grid-area: main;
+    min-height: 0;
+  }
+
+  body.tt-map-mode .main-panel__map-wrapper {
+    display: block;
+    height: 100%;
+  }
+
+  body.tt-map-mode .main-panel__detail {
     display: none;
   }
 

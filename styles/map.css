@@ -200,6 +200,30 @@
   font-size: 12px;
 }
 
+/* On touch devices, give markers + popups more breathing room. */
+@media (max-width: 768px) {
+  .storm-cell {
+    /* Leaflet circleMarker radius is set in JS; override the stroke so
+       the visual hit-area matches what the browser actually accepts. */
+    stroke-width: 2.5px;
+  }
+  .storm-cell.storm-cell--tvs {
+    stroke-width: 3.5px;
+  }
+
+  .storm-cell-popup .leaflet-popup-content {
+    font-size: 13px;
+  }
+
+  .storm-cell-popup__grid td {
+    padding: 8px 14px;
+  }
+
+  .storm-cell-popup__grid td:last-child {
+    font-size: 13px;
+  }
+}
+
 .storm-cell-popup__header {
   display: flex;
   justify-content: space-between;
