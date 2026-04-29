@@ -104,6 +104,11 @@ function selectCard(card) {
   document.dispatchEvent(new CustomEvent('tt:product-selected', { detail: id }));
 }
 
+// Memoize the last-rendered list so polls that don't change anything
+// visible become a no-op (no DOM churn, no re-animation).
+let lastRenderSig = null;
+const renderedIds = new Set();
+
 function renderFeed() {
   const container = document.getElementById('feed-container');
   if (!container) return;
@@ -113,11 +118,15 @@ function renderFeed() {
   const isLoading = store.get('isLoading');
 
   if (isLoading && products.length === 0) {
-    container.innerHTML = `
-      <div class="feed-loading">
-        <div class="spinner"></div>
-      </div>
-    `;
+    if (lastRenderSig !== '__loading') {
+      container.innerHTML = `
+        <div class="feed-loading">
+          <div class="spinner"></div>
+        </div>
+      `;
+      lastRenderSig = '__loading';
+      renderedIds.clear();
+    }
     return;
   }
 
@@ -126,22 +135,45 @@ function renderFeed() {
     const hint = hasLocation
       ? 'Try selecting different categories, widening your radius, or removing the saved location filter.'
       : 'Try selecting different categories or check back later for new reports.';
-    container.innerHTML = `
-      <div class="feed-empty">
-        <div class="feed-empty__icon" aria-hidden="true">&#127786;</div>
-        <div class="feed-empty__title">No tornado products found</div>
-        <div class="feed-empty__subtitle">${hint}</div>
-      </div>
-    `;
+    const sig = `__empty:${hasLocation}`;
+    if (lastRenderSig !== sig) {
+      container.innerHTML = `
+        <div class="feed-empty">
+          <div class="feed-empty__icon" aria-hidden="true">&#127786;</div>
+          <div class="feed-empty__title">No tornado products found</div>
+          <div class="feed-empty__subtitle">${hint}</div>
+        </div>
+      `;
+      lastRenderSig = sig;
+      renderedIds.clear();
+    }
     return;
   }
 
   const lastSeenAt = store.get('lastSeenAt');
-  container.innerHTML = `
-    <div class="feed-list">
-      ${products.map(p => renderProductCard(p, p.id === selectedId, { lastSeenAt })).join('')}
-    </div>
-  `;
+
+  // Render signature: changes only when something visible changes.
+  // Includes per-product fields the card actually displays + selection
+  // + lastSeenAt (drives the "new" badge).
+  const sig = products.map(p =>
+    `${p.id}|${p._subType || ''}|${p._eventName || ''}|${p._radarStatus || ''}|${p._isPDS ? 1 : 0}|${p.issuanceTime || ''}`
+  ).join('::') + `|sel=${selectedId || ''}|seen=${lastSeenAt || 0}`;
+
+  if (sig === lastRenderSig) return; // No visible change — skip render
+
+  // Mark cards that didn't exist on the previous render so only they
+  // play the cardEnter animation. Existing cards whose data changed
+  // get a quiet content swap with no flash.
+  const html = products.map(p => {
+    const isFresh = !renderedIds.has(p.id);
+    return renderProductCard(p, p.id === selectedId, { lastSeenAt, isFresh });
+  }).join('');
+
+  container.innerHTML = `<div class="feed-list">${html}</div>`;
+
+  lastRenderSig = sig;
+  renderedIds.clear();
+  products.forEach(p => renderedIds.add(p.id));
 }
 
 function updateSelection(newId, oldId) {

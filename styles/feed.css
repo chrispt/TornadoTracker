@@ -21,6 +21,11 @@
               border-color var(--transition-fast),
               box-shadow var(--transition-fast),
               transform var(--transition-fast);
+}
+
+/* Animate only cards that are genuinely new since the previous render —
+   prevents the whole feed from flashing on every poll. */
+.product-card--fresh {
   animation: cardEnter 220ms ease both;
 }
 

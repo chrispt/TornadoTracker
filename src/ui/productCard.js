@@ -31,6 +31,9 @@ export function renderProductCard(product, isSelected = false, opts = {}) {
   const newClass = isNew ? 'product-card--new' : '';
   const emergencyClass = product._category === 'EMERGENCY' ? 'product-card--emergency' : '';
   const watchClass = product._category === 'WATCH' ? 'product-card--watch' : '';
+  // Only animate cards that didn't exist on the previous render — re-using
+  // a card that was already in the DOM should be a quiet content swap.
+  const freshClass = opts.isFresh ? 'product-card--fresh' : '';
 
   const radarLabel = product._radarStatus === 'CONFIRMED'
     ? 'radar confirmed'
@@ -41,7 +44,7 @@ export function renderProductCard(product, isSelected = false, opts = {}) {
   const radarPill = renderRadarPill(product._radarStatus);
 
   return `
-    <div class="product-card ${selectedClass} ${newClass} ${emergencyClass} ${watchClass}"
+    <div class="product-card ${selectedClass} ${newClass} ${emergencyClass} ${watchClass} ${freshClass}"
          data-product-id="${escapeHtml(product.id)}" tabindex="0" role="article"
          aria-label="${escapeHtml(ariaLabel)}">
       <span class="product-card__type-badge" style="background:${badgeColor};">
