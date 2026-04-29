@@ -456,7 +456,12 @@ function buildStormCellMarker(cell) {
 function cellTier(cell) {
   if (cell.hasTvs) return 'tvs';
   if (cell.hasMeso) return 'meso';
-  if ((cell.hailProb && cell.hailProb >= 50) || (cell.hailSize && cell.hailSize >= 1)) return 'hail';
+  // POSH (severe hail prob) and POH (any hail prob) are both 0-100;
+  // POSH crossing 50% is a meaningful threshold for severe-criteria hail.
+  const severeHail = (cell.posh != null && cell.posh >= 50)
+    || (cell.poh != null && cell.poh >= 70)
+    || (cell.hailSize != null && cell.hailSize >= 1);
+  if (severeHail) return 'hail';
   return 'plain';
 }
 
@@ -473,16 +478,29 @@ function renderStormCellPopup(cell) {
     fields.push({ label: 'Max reflectivity', value: `${cell.maxDbz.toFixed(0)} dBZ` });
   }
   if (cell.topHeight != null) {
-    fields.push({ label: 'Storm top', value: `${(cell.topHeight / 1000).toFixed(0)},000 ft` });
+    // IEM reports `top` in thousands of feet — multiply to render in ft.
+    fields.push({ label: 'Storm top', value: `${(cell.topHeight * 1000).toLocaleString()} ft` });
   }
-  if (cell.speed != null && cell.direction != null) {
+  // Skip motion when speed AND direction are both zero — IEM's marker for
+  // "stationary or unknown movement" rather than "actually 0 mph at 0°".
+  const isMotionless = (cell.speed == null || cell.speed === 0)
+    && (cell.direction == null || cell.direction === 0);
+  if (!isMotionless && cell.speed != null && cell.direction != null) {
     fields.push({ label: 'Motion', value: `${cell.direction.toFixed(0)}° at ${cell.speed.toFixed(0)} mph` });
-  } else if (cell.speed != null) {
+  } else if (!isMotionless && cell.speed != null) {
     fields.push({ label: 'Speed', value: `${cell.speed.toFixed(0)} mph` });
   }
-  if (cell.hailProb != null) {
-    const sizePart = cell.hailSize != null ? ` · max ${cell.hailSize.toFixed(2)}″` : '';
-    fields.push({ label: 'Hail', value: `${cell.hailProb}%${sizePart}` });
+  if (cell.poh != null && cell.poh > 0) {
+    const sizePart = cell.hailSize != null && cell.hailSize >= 0.25
+      ? ` · max ${cell.hailSize.toFixed(2)}″`
+      : '';
+    fields.push({ label: 'Hail prob', value: `${cell.poh}%${sizePart}` });
+  }
+  if (cell.posh != null && cell.posh > 0) {
+    fields.push({ label: 'Severe hail prob', value: `${cell.posh}%`, highlight: cell.posh >= 50 ? 'hail' : null });
+  }
+  if (cell.vil != null) {
+    fields.push({ label: 'VIL', value: `${cell.vil} kg/m²` });
   }
 
   const cellId = cell.id ? escape(cell.id) : '?';
