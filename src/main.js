@@ -8,7 +8,7 @@ import { fetchMultipleProductTypes } from './api/nwsProducts.js';
 import { fetchProductDetail } from './api/nwsProducts.js';
 import { fetchActiveAlerts } from './api/nwsAlerts.js';
 import { fetchDay1Outlook } from './api/spcOutlook.js';
-import { fetchTvsMarkers } from './api/iemStormAttributes.js';
+import { fetchStormCells } from './api/iemStormAttributes.js';
 import { parseProductText } from './utils/textParser.js';
 import { productCache } from './modules/productCache.js';
 import { idbSaveFeedSnapshot, idbLoadFeedSnapshot } from './modules/idbCache.js';
@@ -336,11 +336,11 @@ function startOutlookPolling() {
 
 async function refreshTvs() {
   try {
-    const { markers, error } = await fetchTvsMarkers();
-    if (error) console.warn('IEM TVS fetch failed:', error.message || error);
-    store.set('tvsMarkers', markers);
+    const { cells, error } = await fetchStormCells();
+    if (error) console.warn('IEM storm-cell fetch failed:', error.message || error);
+    store.set('stormCells', cells);
   } catch (e) {
-    console.warn('IEM TVS fetch failed:', e);
+    console.warn('IEM storm-cell fetch failed:', e);
   }
 }
 

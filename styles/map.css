@@ -165,14 +165,118 @@
   border-color: color-mix(in srgb, var(--warning) 45%, var(--border-color));
 }
 
-/* TVS marker — subtle pulsing amber ring at each Doppler-detected vortex */
-.tvs-marker {
+/* Storm cells — each marker is a Doppler-tracked storm cell. TVS-flagged
+   cells pulse so they stand out without obscuring the rest. */
+.storm-cell {
+  cursor: pointer;
+}
+
+.storm-cell--tvs {
   animation: pulse-tvs 1.6s ease-in-out infinite;
 }
 
 @keyframes pulse-tvs {
-  0%, 100% { stroke-opacity: 0.85; stroke-width: 2; }
-  50%      { stroke-opacity: 0.35; stroke-width: 6; }
+  0%, 100% { stroke-opacity: 0.95; stroke-width: 2.5; }
+  50%      { stroke-opacity: 0.4;  stroke-width: 7; }
+}
+
+/* Storm-cell popup */
+.storm-cell-popup .leaflet-popup-content-wrapper {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-elevated);
+}
+
+.storm-cell-popup .leaflet-popup-tip {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-light);
+}
+
+.storm-cell-popup .leaflet-popup-content {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+
+.storm-cell-popup__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.storm-cell-popup__header--tvs {
+  background: color-mix(in srgb, var(--danger) 25%, transparent);
+}
+.storm-cell-popup__header--meso {
+  background: color-mix(in srgb, #f97316 22%, transparent);
+}
+.storm-cell-popup__header--hail {
+  background: color-mix(in srgb, #facc15 22%, transparent);
+}
+
+.storm-cell-popup__header strong {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.storm-cell-popup__radar {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  letter-spacing: 0.3px;
+}
+
+.storm-cell-popup__grid {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.storm-cell-popup__grid td {
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.storm-cell-popup__grid tr:last-child td {
+  border-bottom: none;
+}
+
+.storm-cell-popup__grid td:first-child {
+  color: var(--text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+  width: 38%;
+}
+
+.storm-cell-popup__grid td:last-child {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.storm-cell-popup__hl-tvs {
+  color: #fecaca !important;
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+}
+
+.storm-cell-popup__hl-meso {
+  color: #fed7aa !important;
+}
+
+.storm-cell-popup__time {
+  font-size: 10px;
+  color: var(--text-faint);
+  padding: 6px 12px;
+  border-top: 1px solid var(--border-color);
+  font-family: var(--font-mono);
 }
 
 /* Leaflet attribution — calmer look */

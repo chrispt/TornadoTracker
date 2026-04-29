@@ -31,8 +31,9 @@ const initialState = {
   outlookVisible: true,
   // New: most recent outlook payload from SPC
   outlook: null,
-  // New: current TVS markers from Iowa Environmental Mesonet's NEXRAD feed
-  tvsMarkers: [],
+  // New: current radar storm cells from Iowa Environmental Mesonet's
+  // NEXRAD attribute feed (TVS, mesocyclone, hail, motion, top, dBZ).
+  stormCells: [],
   // New: offline mode flag
   isOffline: false
 };

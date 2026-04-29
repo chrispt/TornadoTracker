@@ -39,11 +39,12 @@ function renderStats() {
     else if (p._radarStatus === 'INDICATED') radarIndicated++;
   });
 
-  // Prefer true TVS markers from IEM if they're available; fall back to
-  // the deduped warning-text-derived count.
-  const tvsMarkers = store.get('tvsMarkers');
-  if (Array.isArray(tvsMarkers) && tvsMarkers.length > 0) {
-    radarIndicated = tvsMarkers.length;
+  // Prefer real radar attribute data (IEM storm cells flagged TVS) when
+  // it's available; otherwise fall back to the deduped warning-text count.
+  const stormCells = store.get('stormCells');
+  if (Array.isArray(stormCells) && stormCells.length > 0) {
+    const tvsCells = stormCells.filter(c => c.hasTvs);
+    if (tvsCells.length > 0) radarIndicated = tvsCells.length;
   }
 
   let html = '';

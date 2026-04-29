@@ -20,7 +20,7 @@ let map = null;
 let layerGroup = null;
 let outlookLayer = null;
 let radarLayer = null;
-let tvsLayer = null;
+let stormCellsLayer = null;
 let radiusLayer = null;
 let hasFitOnce = false;
 const markersById = new Map();
@@ -56,7 +56,7 @@ export function initMapView() {
   store.subscribe('radarVisible', applyRadarVisibility);
   store.subscribe('outlook', renderOutlook);
   store.subscribe('outlookVisible', renderOutlook);
-  store.subscribe('tvsMarkers', renderTvsMarkers);
+  store.subscribe('stormCells', renderStormCells);
 
   document.addEventListener('tt:map-toggled', () => {
     setTimeout(() => map.invalidateSize(), 50);
@@ -399,32 +399,117 @@ function refreshOutlookControl() {
   btn.classList.toggle('outlook-toggle--on', visible);
 }
 
-// ── TVS markers ───────────────────────────────────────────────────────
+// ── Radar storm cells ────────────────────────────────────────────────
+//
+// Each NEXRAD volume scan publishes a Storm Tracking Information table
+// (storm cells with attributes — dBZ, top, motion, hail, mesocyclone,
+// TVS). We render every cell as a small marker color-coded by its
+// highest-severity flag; clicking opens a popup with the full readout
+// — the same surface RadarOmega/WeatherWise show.
 
-function renderTvsMarkers() {
+function renderStormCells() {
   if (!map) return;
 
-  if (tvsLayer) {
-    map.removeLayer(tvsLayer);
-    tvsLayer = null;
+  if (stormCellsLayer) {
+    map.removeLayer(stormCellsLayer);
+    stormCellsLayer = null;
   }
 
-  const markers = store.get('tvsMarkers') || [];
-  if (markers.length === 0) return;
+  const cells = store.get('stormCells') || [];
+  if (cells.length === 0) return;
 
-  tvsLayer = L.layerGroup();
-  markers.forEach(m => {
-    const dot = L.circleMarker([m.lat, m.lon], {
-      radius: 8,
-      color: '#fbbf24',
-      weight: 2,
-      fillColor: '#fbbf24',
-      fillOpacity: 0.0,
-      className: 'tvs-marker'
-    });
-    const tooltip = `📡 TVS · ${m.radar}${m.time ? ` · ${m.time}` : ''}`;
-    dot.bindTooltip(tooltip, { permanent: false, direction: 'top' });
-    tvsLayer.addLayer(dot);
+  stormCellsLayer = L.layerGroup();
+  cells.forEach(cell => {
+    const marker = buildStormCellMarker(cell);
+    if (marker) stormCellsLayer.addLayer(marker);
   });
-  tvsLayer.addTo(map);
+  stormCellsLayer.addTo(map);
+}
+
+function buildStormCellMarker(cell) {
+  const tier = cellTier(cell);
+  const marker = L.circleMarker([cell.lat, cell.lon], {
+    radius: tier === 'tvs' ? 9 : 6,
+    color: tier === 'tvs' ? '#ef4444'
+         : tier === 'meso' ? '#f97316'
+         : tier === 'hail' ? '#facc15'
+         : '#94a3b8',
+    weight: tier === 'tvs' ? 2.5 : 1.5,
+    fillColor: tier === 'tvs' ? '#ef4444'
+             : tier === 'meso' ? '#f97316'
+             : tier === 'hail' ? '#facc15'
+             : '#cbd5e1',
+    fillOpacity: tier === 'tvs' ? 0.55 : tier === 'plain' ? 0.25 : 0.45,
+    className: tier === 'tvs' ? 'storm-cell storm-cell--tvs' : 'storm-cell'
+  });
+
+  marker.bindPopup(renderStormCellPopup(cell), {
+    className: 'storm-cell-popup',
+    minWidth: 220,
+    maxWidth: 260
+  });
+
+  return marker;
+}
+
+/** Highest-severity tier that's set on the cell. */
+function cellTier(cell) {
+  if (cell.hasTvs) return 'tvs';
+  if (cell.hasMeso) return 'meso';
+  if ((cell.hailProb && cell.hailProb >= 50) || (cell.hailSize && cell.hailSize >= 1)) return 'hail';
+  return 'plain';
+}
+
+function renderStormCellPopup(cell) {
+  const fields = [];
+
+  if (cell.hasTvs) {
+    fields.push({ label: 'TVS', value: 'Detected', highlight: 'tvs' });
+  }
+  if (cell.hasMeso) {
+    fields.push({ label: 'Mesocyclone', value: 'Detected', highlight: 'meso' });
+  }
+  if (cell.maxDbz != null) {
+    fields.push({ label: 'Max reflectivity', value: `${cell.maxDbz.toFixed(0)} dBZ` });
+  }
+  if (cell.topHeight != null) {
+    fields.push({ label: 'Storm top', value: `${(cell.topHeight / 1000).toFixed(0)},000 ft` });
+  }
+  if (cell.speed != null && cell.direction != null) {
+    fields.push({ label: 'Motion', value: `${cell.direction.toFixed(0)}° at ${cell.speed.toFixed(0)} mph` });
+  } else if (cell.speed != null) {
+    fields.push({ label: 'Speed', value: `${cell.speed.toFixed(0)} mph` });
+  }
+  if (cell.hailProb != null) {
+    const sizePart = cell.hailSize != null ? ` · max ${cell.hailSize.toFixed(2)}″` : '';
+    fields.push({ label: 'Hail', value: `${cell.hailProb}%${sizePart}` });
+  }
+
+  const cellId = cell.id ? escape(cell.id) : '?';
+  const radar = escape(cell.radar);
+  const tier = cellTier(cell);
+
+  return `
+    <div class="storm-cell-popup__inner">
+      <div class="storm-cell-popup__header storm-cell-popup__header--${tier}">
+        <strong>Cell ${cellId}</strong>
+        <span class="storm-cell-popup__radar">${radar}</span>
+      </div>
+      <table class="storm-cell-popup__grid">
+        ${fields.map(f => `
+          <tr>
+            <td>${f.label}</td>
+            <td class="${f.highlight ? 'storm-cell-popup__hl-' + f.highlight : ''}">${escape(String(f.value))}</td>
+          </tr>
+        `).join('')}
+      </table>
+      ${cell.time ? `<div class="storm-cell-popup__time">Updated ${escape(cell.time)}</div>` : ''}
+    </div>
+  `;
+}
+
+function escape(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
