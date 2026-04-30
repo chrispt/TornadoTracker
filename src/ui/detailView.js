@@ -2,6 +2,7 @@ import store from '../state/store.js';
 import { EF_SCALE } from '../config/constants.js';
 import { formatDate, escapeHtml, extractOfficeCode } from '../utils/formatting.js';
 import { showToast } from './toast.js';
+import { isProductActive } from '../utils/lifecycle.js';
 
 /**
  * Initialize the detail view — shows full product detail with parsed highlights.
@@ -157,7 +158,9 @@ function renderAlert(alert) {
     { label: 'Expires', value: alert.expires ? formatDate(alert.expires) : null }
   ].filter(f => f.value);
 
-  const radarBanner = renderRadarBanner(alert.radarStatus);
+  // Only show radar banner while the warning is still in effect.
+  const detail = store.get('selectedProductDetail');
+  const radarBanner = isProductActive(detail) ? renderRadarBanner(alert.radarStatus) : '';
 
   return `
     <div class="tornado-highlights">
@@ -214,7 +217,7 @@ function renderTornadoHighlight(tornado, index) {
         ${tornado.eventName ? escapeHtml(tornado.eventName) : `Tornado Report${index > 0 ? ` #${index + 1}` : ''}`}
       </div>
       ${tornado.eventName && index > 0 ? `<div class="tornado-highlights__subtitle">Tornado #${index + 1}</div>` : ''}
-      ${renderRadarBanner(tornado.radarStatus)}
+      ${isProductActive(store.get('selectedProductDetail')) ? renderRadarBanner(tornado.radarStatus) : ''}
       <div class="tornado-highlights__grid">
         ${fields.map(f => `
           <div class="tornado-highlights__item">

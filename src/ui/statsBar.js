@@ -3,6 +3,7 @@ import { CATEGORIES } from '../config/constants.js';
 import {
   highestCategorical, categoricalName, categoricalColor, highestTornadoProb
 } from '../api/spcOutlook.js';
+import { hasActiveRadarSignature } from '../utils/lifecycle.js';
 
 /**
  * Stats bar — summary counts by category, the today's-outlook chip, and an
@@ -22,16 +23,17 @@ function renderStats() {
   const catCounts = {};
   // Count radar status across all sources, but dedupe by content
   // signature (office + issuance time, minute-truncated). The same NWS
-  // warning is published as both a /products/TOR entry (category
-  // WARNING/PDS) and an /alerts/active entry (category ALERT/EMERGENCY)
-  // with different IDs — without dedup we'd count it twice.
+  // warning is published as both a /products/TOR entry and an
+  // /alerts/active entry with different IDs — without dedup we'd count
+  // it twice. Also gate on still-active so old TOR products don't
+  // pollute the "right now" count.
   let radarConfirmed = 0;
   let radarIndicated = 0;
   const seenSig = new Set();
   products.forEach(p => {
     const cat = p._category || 'UNKNOWN';
     catCounts[cat] = (catCounts[cat] || 0) + 1;
-    if (!p._radarStatus) return;
+    if (!hasActiveRadarSignature(p)) return;
     const sig = `${p.issuingOffice || ''}::${(p.issuanceTime || '').slice(0, 16)}`;
     if (seenSig.has(sig)) return;
     seenSig.add(sig);

@@ -1,5 +1,6 @@
 import { CATEGORIES, PRODUCT_SUB_TYPES } from '../config/constants.js';
 import { timeAgo, escapeHtml, extractOfficeCode } from '../utils/formatting.js';
+import { hasActiveRadarSignature } from '../utils/lifecycle.js';
 
 /**
  * Render a single product card HTML string.
@@ -35,13 +36,17 @@ export function renderProductCard(product, isSelected = false, opts = {}) {
   // a card that was already in the DOM should be a quiet content swap.
   const freshClass = opts.isFresh ? 'product-card--fresh' : '';
 
-  const radarLabel = product._radarStatus === 'CONFIRMED'
-    ? 'radar confirmed'
-    : product._radarStatus === 'INDICATED' ? 'TVS detected' : null;
+  // Only surface the radar status while the underlying warning is
+  // still in effect — historical TOR products from /products/TOR can be
+  // hours old and the "TVS Detected" pill is meaningless on those.
+  const showRadarStatus = hasActiveRadarSignature(product);
+  const radarLabel = !showRadarStatus ? null
+    : product._radarStatus === 'CONFIRMED' ? 'radar confirmed'
+    : 'TVS detected';
   const ariaLabel = [badgeLabel, radarLabel, headline, `from ${office}`, time, isNew && 'new']
     .filter(Boolean).join(', ');
 
-  const radarPill = renderRadarPill(product._radarStatus);
+  const radarPill = showRadarStatus ? renderRadarPill(product._radarStatus) : '';
 
   return `
     <div class="product-card ${selectedClass} ${newClass} ${emergencyClass} ${watchClass} ${freshClass}"

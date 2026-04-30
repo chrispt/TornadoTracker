@@ -1,5 +1,6 @@
 import store from '../state/store.js';
 import { renderProductCard } from './productCard.js';
+import { hasActiveRadarSignature } from '../utils/lifecycle.js';
 
 /**
  * Initialize the feed view — renders product cards and handles selection.
@@ -154,9 +155,11 @@ function renderFeed() {
 
   // Render signature: changes only when something visible changes.
   // Includes per-product fields the card actually displays + selection
-  // + lastSeenAt (drives the "new" badge).
+  // + lastSeenAt (drives the "new" badge). The radar pill is gated on
+  // active-now, so the sig folds in active state too — that captures
+  // the moment a TOR ages past its activity window.
   const sig = products.map(p =>
-    `${p.id}|${p._subType || ''}|${p._eventName || ''}|${p._radarStatus || ''}|${p._isPDS ? 1 : 0}|${p.issuanceTime || ''}`
+    `${p.id}|${p._subType || ''}|${p._eventName || ''}|${p._radarStatus || ''}|${hasActiveRadarSignature(p) ? 1 : 0}|${p._isPDS ? 1 : 0}|${p.issuanceTime || ''}`
   ).join('::') + `|sel=${selectedId || ''}|seen=${lastSeenAt || 0}`;
 
   if (sig === lastRenderSig) return; // No visible change — skip render
