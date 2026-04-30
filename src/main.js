@@ -23,6 +23,7 @@ import { initStatsBar } from './ui/statsBar.js';
 import { initMapView } from './ui/mapView.js';
 import { initLocationsView, getActiveLocation } from './ui/locationsView.js';
 import { initRouter } from './ui/router.js';
+import { initResizeHandles } from './ui/resizeHandles.js';
 
 let pollTimer = null;
 let alertsTimer = null;
@@ -57,6 +58,7 @@ async function init() {
   initSearchView();
   initStatsBar();
   initMapView();
+  initResizeHandles();
   initRouter();
 
   setupTabSwitching();

@@ -2,13 +2,61 @@
 #app {
   display: grid;
   grid-template-rows: auto auto 1fr;
-  grid-template-columns: 380px 1fr;
+  --sidebar-w: 380px;
+  grid-template-columns: var(--sidebar-w) 5px 1fr;
   grid-template-areas:
-    "header  header"
-    "stats   stats"
-    "sidebar main";
+    "header  header  header"
+    "stats   stats   stats"
+    "sidebar rsz     main";
   height: 100vh;
   overflow: hidden;
+}
+
+/* Resize handles — shared base */
+.resize-handle {
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+/* Sidebar ↔ main (vertical bar) */
+.resize-handle--col {
+  grid-area: rsz;
+  width: 5px;
+  cursor: col-resize;
+  background: var(--border-color);
+  transition: background 120ms;
+}
+
+.resize-handle--col::after {
+  content: '';
+  position: absolute;
+  inset: 0 -4px; /* widen hit-area without widening the visual bar */
+}
+
+.resize-handle--col:hover,
+.resize-handle--col.resize-handle--dragging {
+  background: var(--accent);
+}
+
+/* Map ↔ detail (horizontal bar) */
+.resize-handle--row {
+  width: 100%;
+  height: 5px;
+  cursor: row-resize;
+  background: var(--border-color);
+  transition: background 120ms;
+}
+
+.resize-handle--row::after {
+  content: '';
+  position: absolute;
+  inset: -4px 0; /* widen hit-area */
+}
+
+.resize-handle--row:hover,
+.resize-handle--row.resize-handle--dragging {
+  background: var(--accent);
 }
 
 /* Header — brand + actions, deliberately minimal */
@@ -507,6 +555,10 @@
       "header"
       "stats"
       "sidebar";
+  }
+
+  .resize-handle {
+    display: none;
   }
 
   .main-panel {

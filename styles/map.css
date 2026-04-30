@@ -6,13 +6,25 @@
 @media (min-width: 769px) {
   .main-panel {
     display: grid;
-    grid-template-rows: 40% 60%;
+    --map-h: 40%;
+    grid-template-rows: var(--map-h) 5px 1fr;
+    grid-template-areas: "map" "rsz" "detail";
     min-height: 0;
   }
 
-  /* When the map is hidden, detail panel takes the whole main panel */
+  .main-panel__map-wrapper { grid-area: map; }
+  #map-resizer              { grid-area: rsz; }
+  .main-panel__detail       { grid-area: detail; }
+
+  /* When the map is hidden, collapse its rows and let detail fill the space */
   .main-panel:has(.main-panel__map-wrapper.hidden) {
     grid-template-rows: 1fr;
+    grid-template-areas: "detail";
+  }
+
+  /* Hide the row resizer when the map panel is hidden */
+  .main-panel:has(.main-panel__map-wrapper.hidden) #map-resizer {
+    display: none;
   }
 }
 

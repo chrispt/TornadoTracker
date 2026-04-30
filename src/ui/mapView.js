@@ -62,6 +62,8 @@ export function initMapView() {
     setTimeout(() => map.invalidateSize(), 50);
   });
 
+  window.addEventListener('tt:map-resized', () => map.invalidateSize());
+
   renderMap();
   renderRadius();
 }
