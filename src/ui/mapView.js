@@ -407,6 +407,12 @@ function refreshOutlookControl() {
 // highest-severity flag; clicking opens a popup with the full readout
 // — the same surface RadarOmega/WeatherWise show.
 
+// Cells whose volume scan is older than this are considered stale —
+// the storm has likely dissipated, the radar went offline, or the cell
+// moved beyond range. NEXRAD scans every ~5 min so 15 min is a safe
+// "still currently active" window.
+const STALE_CELL_MS = 15 * 60 * 1000;
+
 function renderStormCells() {
   if (!map) return;
 
@@ -418,8 +424,24 @@ function renderStormCells() {
   const cells = store.get('stormCells') || [];
   if (cells.length === 0) return;
 
+  // Two render-time filters:
+  //   - drop the 'plain' tier (no TVS, no meso, no severe hail) — those
+  //     are weak non-rotating cells that just add visual noise
+  //   - drop stale cells whose last NEXRAD scan was > 15 min ago
+  // The full IEM payload is still in the store for the stats-bar count.
+  const now = Date.now();
+  const visibleCells = cells.filter(c => {
+    if (cellTier(c) === 'plain') return false;
+    if (c.time) {
+      const scanMs = new Date(c.time).getTime();
+      if (Number.isFinite(scanMs) && now - scanMs > STALE_CELL_MS) return false;
+    }
+    return true;
+  });
+  if (visibleCells.length === 0) return;
+
   stormCellsLayer = L.layerGroup();
-  cells.forEach(cell => {
+  visibleCells.forEach(cell => {
     const marker = buildStormCellMarker(cell);
     if (marker) stormCellsLayer.addLayer(marker);
   });

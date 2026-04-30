@@ -62,8 +62,42 @@
   font-variant-numeric: tabular-nums;
 }
 
-.app-header__office {
-  width: 110px;
+/* Office filter — disclosure (+ Office button) collapses to an input
+   on demand. Power-user filter, so deliberately tucked away. */
+.office-filter {
+  display: inline-flex;
+  align-items: center;
+}
+
+.office-filter__toggle {
+  background: transparent;
+  border: 1px dashed var(--border-color);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color var(--transition-fast),
+              color var(--transition-fast),
+              background var(--transition-fast);
+  white-space: nowrap;
+}
+
+.office-filter__toggle:hover {
+  border-color: var(--border-light);
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+.office-filter__toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.office-filter__input {
+  width: 130px;
   padding: 6px 10px;
   border-radius: 999px;
   background: var(--bg-card);
@@ -75,14 +109,14 @@
   transition: border-color var(--transition-fast);
 }
 
-.app-header__office::placeholder {
+.office-filter__input::placeholder {
   text-transform: none;
   letter-spacing: 0;
   color: var(--text-faint);
   font-family: var(--font-sans);
 }
 
-.app-header__office:hover {
+.office-filter__input:hover {
   border-color: var(--border-light);
 }
 
@@ -359,8 +393,12 @@
   max-width: none;
 }
 
-.sidebar__scope .app-header__office {
-  flex: 0 0 110px;
+.sidebar__scope .office-filter {
+  flex: 0 0 auto;
+}
+
+.sidebar__scope .office-filter__input {
+  flex: 0 0 130px;
 }
 
 .sidebar__tabs {

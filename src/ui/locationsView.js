@@ -33,7 +33,7 @@ function render() {
   const activeId = store.get('activeLocationId');
   const radius = store.get('radiusMiles');
 
-  const options = ['<option value="">All regions</option>']
+  const options = ['<option value="">Anywhere</option>']
     .concat(locations.map(l =>
       `<option value="${escapeHtml(l.id)}" ${l.id === activeId ? 'selected' : ''}>
         ${escapeHtml(l.label)}
@@ -41,9 +41,10 @@ function render() {
     )).join('');
 
   host.innerHTML = `
-    <div class="locations">
+    <div class="locations" role="group" aria-label="Filter feed by area"
+         title="Filter feed by area">
       <select id="location-select" class="locations__select"
-              aria-label="Active location">
+              aria-label="Filter near saved location">
         ${options}
       </select>
       <input type="number" id="radius-input" class="locations__radius"

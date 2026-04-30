@@ -34,11 +34,40 @@ export function initHeader() {
 
   renderCategoryFilters();
 
+  // Office filter — hidden by default behind a "+ Office" disclosure
+  // button since it's a power-user filter most viewers never need.
+  const officeHost = document.getElementById('office-filter-host');
   const officeInput = document.getElementById('office-filter');
+  const officeToggle = document.getElementById('office-filter-toggle');
+
+  function expandOfficeFilter() {
+    officeHost?.classList.remove('office-filter--collapsed');
+    if (officeInput) {
+      officeInput.hidden = false;
+      officeInput.focus();
+    }
+    if (officeToggle) officeToggle.hidden = true;
+  }
+
+  function collapseOfficeFilter() {
+    officeHost?.classList.add('office-filter--collapsed');
+    if (officeInput) officeInput.hidden = true;
+    if (officeToggle) officeToggle.hidden = false;
+  }
+
+  officeToggle?.addEventListener('click', expandOfficeFilter);
+
   officeInput?.addEventListener('change', () => {
     const value = officeInput.value.trim().toUpperCase();
     officeInput.value = value;
     document.dispatchEvent(new CustomEvent('tt:office-changed', { detail: value }));
+  });
+
+  // On blur, collapse back if the user didn't actually type anything.
+  // If they typed an office code, leave the input visible so they can
+  // see / edit / clear it without re-clicking the disclosure.
+  officeInput?.addEventListener('blur', () => {
+    if (!officeInput.value.trim()) collapseOfficeFilter();
   });
 
   document.getElementById('refresh-btn').addEventListener('click', () => {

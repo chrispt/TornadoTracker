@@ -43,9 +43,16 @@
         <div class="sidebar__chips" id="type-filters" role="group" aria-label="Category filters"></div>
         <div class="sidebar__scope">
           <div id="locations-host"></div>
-          <input type="text" id="office-filter" class="app-header__office"
-            placeholder="Office"
-            aria-label="Filter by NWS office code (e.g. KBMX)" />
+          <div class="office-filter office-filter--collapsed" id="office-filter-host">
+            <button type="button" class="office-filter__toggle" id="office-filter-toggle"
+              aria-label="Filter by NWS Weather Forecast Office code">
+              <span aria-hidden="true">+</span> Office
+            </button>
+            <input type="text" id="office-filter" class="office-filter__input"
+              placeholder="Office (e.g. KBMX)"
+              aria-label="NWS Weather Forecast Office code"
+              hidden />
+          </div>
         </div>
       </div>
       <div class="sidebar__tabs" role="tablist">

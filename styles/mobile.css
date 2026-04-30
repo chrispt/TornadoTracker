@@ -168,11 +168,20 @@
     box-sizing: border-box;
   }
 
-  .app-header__office {
+  .sidebar__scope .office-filter,
+  .sidebar__scope .office-filter__input {
     flex: 1 1 100%;
-    width: auto !important;
     min-height: 38px;
     font-size: 12px;
+  }
+
+  .sidebar__scope .office-filter__input {
+    width: 100%;
+  }
+
+  .sidebar__scope .office-filter__toggle {
+    width: 100%;
+    text-align: center;
   }
 
   .filter-chip {
@@ -364,9 +373,9 @@
     font-size: 10.5px;
   }
 
-  #office-filter {
-    width: 90px !important;
-  }
+  /* Office filter retains its full-width feel inside the sidebar scope
+     even on the smallest phones; previous override is no longer needed
+     since the disclosure pattern handles narrow screens cleanly. */
 
   /* Detail header: drop Share/Copy onto a second row so the title gets
      to wrap freely without colliding with the action buttons. */
