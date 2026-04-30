@@ -20,7 +20,6 @@ let map = null;
 let layerGroup = null;
 let outlookLayer = null;
 let radarLayer = null;
-let stormCellsLayer = null;
 let radiusLayer = null;
 let hasFitOnce = false;
 const markersById = new Map();
@@ -56,7 +55,6 @@ export function initMapView() {
   store.subscribe('radarVisible', applyRadarVisibility);
   store.subscribe('outlook', renderOutlook);
   store.subscribe('outlookVisible', renderOutlook);
-  store.subscribe('stormCells', renderStormCells);
 
   document.addEventListener('tt:map-toggled', () => {
     setTimeout(() => map.invalidateSize(), 50);
@@ -100,6 +98,15 @@ function renderMap() {
   if (!hasFitOnce && added > 0 && bounds.isValid()) {
     map.fitBounds(bounds.pad(0.1), { animate: false, maxZoom: 8 });
     hasFitOnce = true;
+  }
+
+  // If the user already selected a product (e.g. from the feed) but its
+  // GPS layer wasn't on the map yet, the focus event was a no-op. Now
+  // that markersById is fresh, retry — handles the click-before-parsed
+  // race when detail loads asynchronously.
+  const selectedId = store.get('selectedProductId');
+  if (selectedId && markersById.has(selectedId)) {
+    focusSelected(selectedId);
   }
 }
 
@@ -225,10 +232,12 @@ function focusSelected(id) {
   if (!map || !id) return;
   const layer = markersById.get(id);
   if (!layer) return;
+  // flyTo / flyToBounds give a smooth animated pan rather than the abrupt
+  // jump of setView / fitBounds — better UX when bouncing between feed cards.
   if (layer.getBounds) {
-    map.fitBounds(layer.getBounds().pad(0.5), { maxZoom: 10 });
+    map.flyToBounds(layer.getBounds().pad(0.5), { maxZoom: 10, duration: 0.6 });
   } else if (layer.getLatLng) {
-    map.setView(layer.getLatLng(), Math.max(map.getZoom(), 7));
+    map.flyTo(layer.getLatLng(), Math.max(map.getZoom(), 9), { duration: 0.6 });
   }
 }
 
@@ -399,166 +408,4 @@ function refreshOutlookControl() {
   const visible = !!store.get('outlookVisible');
   btn.setAttribute('aria-pressed', String(visible));
   btn.classList.toggle('outlook-toggle--on', visible);
-}
-
-// ── Radar storm cells ────────────────────────────────────────────────
-//
-// Each NEXRAD volume scan publishes a Storm Tracking Information table
-// (storm cells with attributes — dBZ, top, motion, hail, mesocyclone,
-// TVS). We render every cell as a small marker color-coded by its
-// highest-severity flag; clicking opens a popup with the full readout
-// — the same surface RadarOmega/WeatherWise show.
-
-// Cells whose volume scan is older than this are considered stale —
-// the storm has likely dissipated, the radar went offline, or the cell
-// moved beyond range. NEXRAD scans every ~5 min so 15 min is a safe
-// "still currently active" window.
-const STALE_CELL_MS = 15 * 60 * 1000;
-
-function renderStormCells() {
-  if (!map) return;
-
-  if (stormCellsLayer) {
-    map.removeLayer(stormCellsLayer);
-    stormCellsLayer = null;
-  }
-
-  const cells = store.get('stormCells') || [];
-  if (cells.length === 0) return;
-
-  // Two render-time filters:
-  //   - drop the 'plain' tier (no TVS, no meso, no severe hail) — those
-  //     are weak non-rotating cells that just add visual noise
-  //   - drop stale cells whose last NEXRAD scan was > 15 min ago.
-  //     Cells without a parseable timestamp are treated as stale too —
-  //     we can't verify they're current, so don't put them on the map.
-  // The full IEM payload is still in the store for the stats-bar count.
-  const now = Date.now();
-  const visibleCells = cells.filter(c => {
-    if (cellTier(c) === 'plain') return false;
-    const scanMs = c.time ? new Date(c.time).getTime() : NaN;
-    if (!Number.isFinite(scanMs)) return false;
-    if (now - scanMs > STALE_CELL_MS) return false;
-    return true;
-  });
-  if (visibleCells.length === 0) return;
-
-  stormCellsLayer = L.layerGroup();
-  visibleCells.forEach(cell => {
-    const marker = buildStormCellMarker(cell);
-    if (marker) stormCellsLayer.addLayer(marker);
-  });
-  stormCellsLayer.addTo(map);
-}
-
-function buildStormCellMarker(cell) {
-  const tier = cellTier(cell);
-  // Larger markers for higher-tier cells; the tap-target ends up larger
-  // than the visible radius thanks to Leaflet's touch tolerance.
-  const radius = tier === 'tvs' ? 11
-               : tier === 'meso' ? 8
-               : tier === 'hail' ? 7
-               : 6;
-  const marker = L.circleMarker([cell.lat, cell.lon], {
-    radius,
-    color: tier === 'tvs' ? '#ef4444'
-         : tier === 'meso' ? '#f97316'
-         : tier === 'hail' ? '#facc15'
-         : '#94a3b8',
-    weight: tier === 'tvs' ? 2.5 : 1.5,
-    fillColor: tier === 'tvs' ? '#ef4444'
-             : tier === 'meso' ? '#f97316'
-             : tier === 'hail' ? '#facc15'
-             : '#cbd5e1',
-    fillOpacity: tier === 'tvs' ? 0.55 : tier === 'plain' ? 0.25 : 0.45,
-    className: tier === 'tvs' ? 'storm-cell storm-cell--tvs' : 'storm-cell'
-  });
-
-  marker.bindPopup(renderStormCellPopup(cell), {
-    className: 'storm-cell-popup',
-    minWidth: 220,
-    maxWidth: 260
-  });
-
-  return marker;
-}
-
-/** Highest-severity tier that's set on the cell. */
-function cellTier(cell) {
-  if (cell.hasTvs) return 'tvs';
-  if (cell.hasMeso) return 'meso';
-  // POSH (severe hail prob) and POH (any hail prob) are both 0-100;
-  // POSH crossing 50% is a meaningful threshold for severe-criteria hail.
-  const severeHail = (cell.posh != null && cell.posh >= 50)
-    || (cell.poh != null && cell.poh >= 70)
-    || (cell.hailSize != null && cell.hailSize >= 1);
-  if (severeHail) return 'hail';
-  return 'plain';
-}
-
-function renderStormCellPopup(cell) {
-  const fields = [];
-
-  if (cell.hasTvs) {
-    fields.push({ label: 'TVS', value: 'Detected', highlight: 'tvs' });
-  }
-  if (cell.hasMeso) {
-    fields.push({ label: 'Mesocyclone', value: 'Detected', highlight: 'meso' });
-  }
-  if (cell.maxDbz != null) {
-    fields.push({ label: 'Max reflectivity', value: `${cell.maxDbz.toFixed(0)} dBZ` });
-  }
-  if (cell.topHeight != null) {
-    // IEM reports `top` in thousands of feet — multiply to render in ft.
-    fields.push({ label: 'Storm top', value: `${(cell.topHeight * 1000).toLocaleString()} ft` });
-  }
-  // Skip motion when speed AND direction are both zero — IEM's marker for
-  // "stationary or unknown movement" rather than "actually 0 mph at 0°".
-  const isMotionless = (cell.speed == null || cell.speed === 0)
-    && (cell.direction == null || cell.direction === 0);
-  if (!isMotionless && cell.speed != null && cell.direction != null) {
-    fields.push({ label: 'Motion', value: `${cell.direction.toFixed(0)}° at ${cell.speed.toFixed(0)} mph` });
-  } else if (!isMotionless && cell.speed != null) {
-    fields.push({ label: 'Speed', value: `${cell.speed.toFixed(0)} mph` });
-  }
-  if (cell.poh != null && cell.poh > 0) {
-    const sizePart = cell.hailSize != null && cell.hailSize >= 0.25
-      ? ` · max ${cell.hailSize.toFixed(2)}″`
-      : '';
-    fields.push({ label: 'Hail prob', value: `${cell.poh}%${sizePart}` });
-  }
-  if (cell.posh != null && cell.posh > 0) {
-    fields.push({ label: 'Severe hail prob', value: `${cell.posh}%`, highlight: cell.posh >= 50 ? 'hail' : null });
-  }
-  if (cell.vil != null) {
-    fields.push({ label: 'VIL', value: `${cell.vil} kg/m²` });
-  }
-
-  const cellId = cell.id ? escape(cell.id) : '?';
-  const radar = escape(cell.radar);
-  const tier = cellTier(cell);
-
-  return `
-    <div class="storm-cell-popup__inner">
-      <div class="storm-cell-popup__header storm-cell-popup__header--${tier}">
-        <strong>Cell ${cellId}</strong>
-        <span class="storm-cell-popup__radar">${radar}</span>
-      </div>
-      <table class="storm-cell-popup__grid">
-        ${fields.map(f => `
-          <tr>
-            <td>${f.label}</td>
-            <td class="${f.highlight ? 'storm-cell-popup__hl-' + f.highlight : ''}">${escape(String(f.value))}</td>
-          </tr>
-        `).join('')}
-      </table>
-      ${cell.time ? `<div class="storm-cell-popup__time">Updated ${escape(cell.time)}</div>` : ''}
-    </div>
-  `;
-}
-
-function escape(s) {
-  return String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
