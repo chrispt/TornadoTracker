@@ -429,15 +429,16 @@ function renderStormCells() {
   // Two render-time filters:
   //   - drop the 'plain' tier (no TVS, no meso, no severe hail) — those
   //     are weak non-rotating cells that just add visual noise
-  //   - drop stale cells whose last NEXRAD scan was > 15 min ago
+  //   - drop stale cells whose last NEXRAD scan was > 15 min ago.
+  //     Cells without a parseable timestamp are treated as stale too —
+  //     we can't verify they're current, so don't put them on the map.
   // The full IEM payload is still in the store for the stats-bar count.
   const now = Date.now();
   const visibleCells = cells.filter(c => {
     if (cellTier(c) === 'plain') return false;
-    if (c.time) {
-      const scanMs = new Date(c.time).getTime();
-      if (Number.isFinite(scanMs) && now - scanMs > STALE_CELL_MS) return false;
-    }
+    const scanMs = c.time ? new Date(c.time).getTime() : NaN;
+    if (!Number.isFinite(scanMs)) return false;
+    if (now - scanMs > STALE_CELL_MS) return false;
     return true;
   });
   if (visibleCells.length === 0) return;

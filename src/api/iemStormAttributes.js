@@ -99,8 +99,8 @@ function parseFeatureCollection(data) {
       lon,
       radar: props.nexrad || props.radar || props.STATION || 'NEXRAD',
       time: props.valid || props.utc_valid || props.observation_time || null,
-      hasTvs: tvsField !== '' && tvsField !== 'NONE' && tvsField !== 'N/A' && tvsField !== '0',
-      hasMeso: mesoField !== '' && mesoField !== 'NONE' && mesoField !== 'N/A' && mesoField !== '0',
+      hasTvs: isRadarDetection(tvsField),
+      hasMeso: isRadarDetection(mesoField),
       maxDbz: numOrNull(props.max_dbz ?? props.MAXDBZ),
       maxDbzHeight: numOrNull(props.max_dbz_height ?? props.MAX_DBZ_H),
       topHeight: numOrNull(props.top ?? props.TOP),
@@ -120,5 +120,18 @@ function numOrNull(v) {
   if (v == null || v === '' || v === 'N/A') return null;
   const n = typeof v === 'number' ? v : parseFloat(v);
   return Number.isFinite(n) ? n : null;
+}
+
+// IEM's tvs/meso fields use placeholder strings ("NONE", "N/A") and
+// zero-padded numeric IDs ("0", "00", "000", "0000") to mean "no detection".
+// Anything that's a real detection is either a non-zero numeric strength or
+// an alphanumeric ID (e.g. "MD1", "M0123"). Treat zero-equivalent strings
+// as no detection so we don't paint hundreds of empty cells as meso.
+function isRadarDetection(raw) {
+  const s = String(raw ?? '').trim().toUpperCase();
+  if (!s || s === 'NONE' || s === 'N/A') return false;
+  if (/^0+$/.test(s)) return false;
+  if (/^\d+$/.test(s)) return parseInt(s, 10) > 0;
+  return true;
 }
 
