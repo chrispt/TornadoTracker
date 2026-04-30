@@ -155,13 +155,13 @@
 
 .radar-toggle--on {
   background: color-mix(in srgb, #22d3ee 18%, var(--bg-secondary));
-  color: #a5f3fc;
+  color: var(--text-info-soft);
   border-color: color-mix(in srgb, #22d3ee 45%, var(--border-color));
 }
 
 .outlook-toggle--on {
   background: color-mix(in srgb, var(--warning) 18%, var(--bg-secondary));
-  color: #fed7aa;
+  color: var(--text-orange-soft);
   border-color: color-mix(in srgb, var(--warning) 45%, var(--border-color));
 }
 
@@ -287,12 +287,12 @@
 }
 
 .storm-cell-popup__hl-tvs {
-  color: #fecaca !important;
+  color: var(--text-danger-soft) !important;
   background: color-mix(in srgb, var(--danger) 18%, transparent);
 }
 
 .storm-cell-popup__hl-meso {
-  color: #fed7aa !important;
+  color: var(--text-orange-soft) !important;
 }
 
 .storm-cell-popup__time {

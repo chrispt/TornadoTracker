@@ -152,11 +152,26 @@
 
   .sidebar__scope {
     margin-top: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Locations control gets its own row on phones — full width — and the
+     office input drops below it. Keeps the controls finger-friendly
+     instead of squeezing them into one cramped strip. */
+  .sidebar__scope #locations-host {
+    flex: 1 1 100%;
+  }
+
+  .sidebar__scope .locations {
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .app-header__office {
-    width: 90px !important;
-    min-height: 36px;
+    flex: 1 1 100%;
+    width: auto !important;
+    min-height: 38px;
     font-size: 12px;
   }
 
@@ -194,11 +209,6 @@
 
   .product-card__time {
     font-size: 12px;
-  }
-
-  .product-card__preview {
-    font-size: 12px;
-    -webkit-line-clamp: 2;
   }
 
   .product-card__type-badge {
@@ -356,5 +366,23 @@
 
   #office-filter {
     width: 90px !important;
+  }
+
+  /* Detail header: drop Share/Copy onto a second row so the title gets
+     to wrap freely without colliding with the action buttons. */
+  .detail-view__header {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .detail-view__title {
+    flex: 1 1 calc(100% - 60px);
+    min-width: 0;
+  }
+
+  .detail-view__actions {
+    flex: 1 1 100%;
+    margin-left: 0 !important;
+    justify-content: flex-end;
   }
 }

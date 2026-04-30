@@ -30,7 +30,7 @@
 
 /* PDS banner */
 .detail-view__pds-banner {
-  background: #dc2626;
+  background: var(--danger-dark);
   color: white;
   font-weight: 700;
   font-size: 13px;
@@ -109,7 +109,7 @@
 }
 
 .radar-banner--indicated .radar-banner__label {
-  color: #fde68a;
+  color: var(--text-warning-soft);
 }
 
 .radar-banner--confirmed {
@@ -118,7 +118,7 @@
 }
 
 .radar-banner--confirmed .radar-banner__label {
-  color: #fecaca;
+  color: var(--text-danger-soft);
 }
 
 .tornado-highlights__grid {

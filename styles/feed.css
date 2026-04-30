@@ -65,7 +65,7 @@
 }
 
 .product-card--emergency .product-card__office {
-  color: #fecaca;
+  color: var(--text-danger-soft);
 }
 
 /* Watch: subtle amber accent */
@@ -145,13 +145,13 @@
 
 .radar-pill--indicated {
   background: color-mix(in srgb, var(--warning) 16%, var(--bg-card));
-  color: #fde68a;
+  color: var(--text-warning-soft);
   border-color: color-mix(in srgb, var(--warning) 40%, transparent);
 }
 
 .radar-pill--confirmed {
   background: color-mix(in srgb, var(--danger) 18%, var(--bg-card));
-  color: #fecaca;
+  color: var(--text-danger-soft);
   border-color: color-mix(in srgb, var(--danger) 50%, transparent);
 }
 

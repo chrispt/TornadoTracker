@@ -147,6 +147,19 @@
   flex-wrap: wrap;
 }
 
+/* High-priority items (emergency banner + radar callout) stay grouped
+   and pinned so they're always rendered first when the bar overflows. */
+.stats-bar__pinned {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.stats-bar__pinned:empty {
+  display: none;
+}
+
 .stats-bar__item {
   display: flex;
   align-items: center;
@@ -189,7 +202,7 @@
   font-size: 10px;
   font-weight: 700;
   font-family: var(--font-mono);
-  color: #0f1622;
+  color: var(--bg-input);
   letter-spacing: 0.4px;
 }
 
@@ -242,14 +255,14 @@
 
 .stats-bar__radar--confirmed {
   background: color-mix(in srgb, var(--danger) 22%, var(--bg-secondary));
-  color: #fecaca;
+  color: var(--text-danger-soft);
   border-color: color-mix(in srgb, var(--danger) 55%, transparent);
   animation: pulse-radar-confirmed 2s ease-in-out infinite;
 }
 
 .stats-bar__radar--indicated {
   background: color-mix(in srgb, var(--warning) 18%, var(--bg-secondary));
-  color: #fde68a;
+  color: var(--text-warning-soft);
   border-color: color-mix(in srgb, var(--warning) 50%, transparent);
 }
 
@@ -316,6 +329,12 @@
 .filter-chip__bulk:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+  color: var(--text-primary);
+}
+
+.filter-chip__bulk:active {
+  transform: scale(0.96);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
   color: var(--text-primary);
 }
 

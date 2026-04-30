@@ -49,7 +49,11 @@ function renderStats() {
     if (tvsCells.length > 0) radarIndicated = tvsCells.length;
   }
 
-  let html = '';
+  // Pin the high-priority items so they're always visible even when the
+  // bar overflows on narrow viewports — emergency first, then radar.
+  // Lower-priority items (outlook chip, category counts) trail and may
+  // scroll horizontally on phones.
+  let html = '<div class="stats-bar__pinned">';
 
   const emergencyCount = catCounts.EMERGENCY || 0;
   if (emergencyCount > 0) {
@@ -61,8 +65,6 @@ function renderStats() {
     `;
   }
 
-  // Radar callout — separate from emergency; shows TVS / debris detections.
-  // Confirmed wins display priority; Indicated only shown if no Confirmed.
   if (radarConfirmed > 0) {
     html += `
       <div class="stats-bar__radar stats-bar__radar--confirmed" role="alert" aria-live="assertive">
@@ -79,6 +81,8 @@ function renderStats() {
       </div>
     `;
   }
+
+  html += '</div>';
 
   // SPC Day 1 outlook summary chip — "today's threat level"
   const outlook = store.get('outlook');
@@ -99,21 +103,16 @@ function renderStats() {
     }
   }
 
-  html += `
-    <div class="stats-bar__item">
-      <span>Total:</span>
-      <span class="stats-bar__value">${products.length}</span>
-    </div>
-  `;
-
+  // Per-category counts. "Total" row removed — categories already sum to it.
+  // Emergency category is surfaced via the banner above, not the count list.
   Object.entries(CATEGORIES).forEach(([key, cat]) => {
-    if (key === 'EMERGENCY') return; // shown via the banner instead
+    if (key === 'EMERGENCY') return;
     const count = catCounts[key] || 0;
     if (count > 0) {
       html += `
         <div class="stats-bar__item">
           <span class="stats-bar__dot" style="background:${cat.color};" aria-hidden="true"></span>
-          <span>${cat.label}:</span>
+          <span>${cat.label}</span>
           <span class="stats-bar__value">${count}</span>
         </div>
       `;

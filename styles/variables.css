@@ -34,12 +34,9 @@
   --border-light: #34405a;
   --border-strong: #4a5878;
 
-  /* Product type colors (legacy — kept for backwards compat) */
+  /* Tornado-warning accent colour, used for tornado-highlights titles.
+     Other product-type colours come from CATEGORIES in JS now. */
   --color-tor: #ef4444;
-  --color-svr: #f97316;
-  --color-pns: #3b82f6;
-  --color-lsr: #8b5cf6;
-  --color-svs: #eab308;
 
   /* EF scale colors */
   --color-ef0: #fde047;
@@ -54,8 +51,15 @@
   --accent-hover: #4f46e5;
   --accent-faint: rgba(99,102,241,0.18);
   --danger: #ef4444;
+  --danger-dark: #dc2626;
   --success: #22c55e;
   --warning: #f59e0b;
+
+  /* Soft text variants — used on tinted backgrounds for severity tiers */
+  --text-danger-soft: #fecaca;   /* red-100, used on red-tinted surfaces */
+  --text-warning-soft: #fde68a;  /* amber-200, used on amber-tinted surfaces */
+  --text-orange-soft: #fed7aa;   /* orange-200, used on outlook-toggle and meso */
+  --text-info-soft: #a5f3fc;     /* cyan-200, used on the radar-toggle on state */
 
   /* Spacing */
   --space-xs: 4px;
