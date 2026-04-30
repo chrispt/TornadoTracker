@@ -90,10 +90,54 @@ function renderCategoryFilters() {
   const container = document.getElementById('type-filters');
   if (!container) return;
 
-  const selected = store.get('selectedCategories');
+  // Build the static row once; paintChips() handles all subsequent state.
+  container.innerHTML = `
+    <div class="sidebar__chips-row" id="chips-row"></div>
+    <button type="button" class="filter-chip__bulk" id="filter-bulk-btn"></button>
+  `;
 
-  container.innerHTML = Object.entries(CATEGORIES).map(([key, cat]) => {
-    const isChecked = selected.includes(key);
+  paintChips();
+
+  // Per-chip toggle: keep the existing "can't uncheck last chip" guard
+  // so an accidental click into a zero state bounces back. The bulk
+  // button is the explicit path to clear everything.
+  const chipsRow = document.getElementById('chips-row');
+  chipsRow.addEventListener('change', (e) => {
+    const checked = [...chipsRow.querySelectorAll('.type-filter-cb:checked')].map(cb => cb.value);
+    if (checked.length === 0) {
+      e.target.checked = true;
+      return;
+    }
+    store.set('selectedCategories', checked);
+    document.dispatchEvent(new CustomEvent('tt:categories-changed', { detail: checked }));
+  });
+
+  // Bulk action: select all / clear all
+  document.getElementById('filter-bulk-btn').addEventListener('click', () => {
+    const allKeys = Object.keys(CATEGORIES);
+    const current = store.get('selectedCategories') || [];
+    const allChecked = current.length === allKeys.length;
+    const next = allChecked ? [] : allKeys;
+    store.set('selectedCategories', next);
+    document.dispatchEvent(new CustomEvent('tt:categories-changed', { detail: next }));
+  });
+
+  // Keep visuals in sync if categories are changed from anywhere.
+  store.subscribe('selectedCategories', paintChips);
+}
+
+function paintChips() {
+  const chipsRow = document.getElementById('chips-row');
+  const bulkBtn = document.getElementById('filter-bulk-btn');
+  if (!chipsRow || !bulkBtn) return;
+
+  const selected = store.get('selectedCategories') || [];
+  const selectedSet = new Set(selected);
+  const allKeys = Object.keys(CATEGORIES);
+  const allChecked = allKeys.every(k => selectedSet.has(k));
+
+  chipsRow.innerHTML = Object.entries(CATEGORIES).map(([key, cat]) => {
+    const isChecked = selectedSet.has(key);
     const checkedClass = isChecked ? 'filter-chip--checked' : '';
     return `
       <label class="filter-chip ${checkedClass}" style="--filter-chip-color:${cat.color};">
@@ -106,18 +150,7 @@ function renderCategoryFilters() {
     `;
   }).join('');
 
-  container.addEventListener('change', (e) => {
-    const checked = [...container.querySelectorAll('.type-filter-cb:checked')].map(cb => cb.value);
-    if (checked.length > 0) {
-      store.set('selectedCategories', checked);
-      document.dispatchEvent(new CustomEvent('tt:categories-changed', { detail: checked }));
-    } else {
-      e.target.checked = true;
-      return;
-    }
-    container.querySelectorAll('.filter-chip').forEach(chip => {
-      const cb = chip.querySelector('.type-filter-cb');
-      chip.classList.toggle('filter-chip--checked', cb.checked);
-    });
-  });
+  const label = allChecked ? 'Clear all' : 'Select all';
+  bulkBtn.textContent = label;
+  bulkBtn.setAttribute('aria-label', `${label} category filters`);
 }

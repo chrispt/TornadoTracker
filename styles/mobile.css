@@ -132,6 +132,18 @@
     display: none;
   }
 
+  /* Inside the scrollable strip, let chips flow nowrap and the bulk
+     button sit at the end — scrolls with them rather than being pinned. */
+  .sidebar__chips-row {
+    flex-wrap: nowrap;
+    flex: 0 0 auto;
+  }
+
+  .filter-chip__bulk {
+    flex-shrink: 0;
+    padding: 6px 10px;
+  }
+
   .filter-chip {
     flex-shrink: 0;
     padding: 6px 12px;
