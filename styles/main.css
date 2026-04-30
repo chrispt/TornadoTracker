@@ -90,10 +90,10 @@
 .filter-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 12px 5px 10px;
+  gap: 5px;
+  padding: 4px 10px 4px 8px;
   border-radius: 999px;
-  font-size: var(--text-sm);
+  font-size: 12px;
   font-weight: 500;
   border: 1px solid var(--border-color);
   background: var(--bg-card);
@@ -105,6 +105,7 @@
               transform var(--transition-fast);
   user-select: none;
   white-space: nowrap;
+  line-height: 1.4;
 }
 
 .filter-chip:hover {
@@ -118,19 +119,19 @@
   outline-offset: 2px;
 }
 
+/* Checked: tinted bg + colored border. Dropped the box-shadow ring
+   that made every chip read as "puffy" alongside the calm scope row. */
 .filter-chip--checked {
-  border-color: color-mix(in srgb, var(--filter-chip-color, var(--accent)) 55%, transparent);
-  background: color-mix(in srgb, var(--filter-chip-color, var(--accent)) 16%, var(--bg-card));
+  border-color: color-mix(in srgb, var(--filter-chip-color, var(--accent)) 60%, transparent);
+  background: color-mix(in srgb, var(--filter-chip-color, var(--accent)) 14%, var(--bg-card));
   color: var(--text-primary);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--filter-chip-color, var(--accent)) 25%, transparent);
 }
 
 .filter-chip__dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   display: inline-block;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--filter-chip-color, currentColor) 25%, transparent);
 }
 
 /* Stats bar — "today's situation" strip */
@@ -289,9 +290,6 @@
 }
 
 .sidebar__chips {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   margin-bottom: 10px;
 }
 
@@ -299,13 +297,15 @@
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
-  flex: 1;
-  min-width: 0;
+  align-items: center;
 }
 
-/* Bulk select-all / clear-all toggle next to the chips */
+/* Bulk select-all / clear-all toggle — sits at the end of the chip
+   flow so it wraps with the chips instead of floating in dead space
+   alongside a multi-row stack. */
 .filter-chip__bulk {
   flex-shrink: 0;
+  margin-left: auto;
   background: transparent;
   border: none;
   color: var(--text-muted);
@@ -318,7 +318,6 @@
   cursor: pointer;
   transition: color var(--transition-fast), background var(--transition-fast);
   white-space: nowrap;
-  align-self: center;
 }
 
 .filter-chip__bulk:hover {

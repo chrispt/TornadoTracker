@@ -8,15 +8,18 @@ export const PRODUCT_TYPES = {
   LSR: { code: 'LSR', label: 'Local Storm Report', color: '#8b5cf6' }
 };
 
-/** User-facing tornado categories — ordered by severity for the UI. */
+/** User-facing tornado categories — ordered by severity for the UI.
+ *  `label` is the full human-readable name (used in the stats bar and on
+ *  card badges); `shortLabel` is the chip-friendly form that drops the
+ *  redundant "Tornado" prefix where context already implies it. */
 export const CATEGORIES = {
-  EMERGENCY: { key: 'EMERGENCY', label: 'Tornado Emergency', color: '#dc2626' },
-  ALERT:     { key: 'ALERT',     label: 'Active Alerts',     color: '#f43f5e' },
-  WATCH:     { key: 'WATCH',     label: 'Tornado Watches',   color: '#f59e0b' },
-  WARNING:   { key: 'WARNING',   label: 'Tornado Warnings',  color: '#a855f7' },
-  PDS:       { key: 'PDS',       label: 'PDS Warnings',      color: '#ef4444' },
-  SURVEY:    { key: 'SURVEY',    label: 'Damage Surveys',    color: '#3b82f6' },
-  LSR:       { key: 'LSR',       label: 'Storm Reports',     color: '#8b5cf6' }
+  EMERGENCY: { key: 'EMERGENCY', label: 'Tornado Emergency', shortLabel: 'Emergency', color: '#dc2626' },
+  ALERT:     { key: 'ALERT',     label: 'Active Alerts',     shortLabel: 'Alerts',    color: '#f43f5e' },
+  WATCH:     { key: 'WATCH',     label: 'Tornado Watches',   shortLabel: 'Watches',   color: '#f59e0b' },
+  WARNING:   { key: 'WARNING',   label: 'Tornado Warnings',  shortLabel: 'Warnings',  color: '#a855f7' },
+  PDS:       { key: 'PDS',       label: 'PDS Warnings',      shortLabel: 'PDS',       color: '#ef4444' },
+  SURVEY:    { key: 'SURVEY',    label: 'Damage Surveys',    shortLabel: 'Surveys',   color: '#3b82f6' },
+  LSR:       { key: 'LSR',       label: 'Storm Reports',     shortLabel: 'Reports',   color: '#8b5cf6' }
 };
 
 /** Map NWS sub-type → user-facing category */
