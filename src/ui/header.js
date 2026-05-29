@@ -13,7 +13,7 @@ export function initHeader() {
 
   header.innerHTML = `
     <div class="app-header__brand">
-      <span class="app-header__mark" aria-hidden="true">&#x1F32A;</span>
+      <img class="app-header__mark" src="/favicon.svg" alt="" width="22" height="22" />
       <span class="app-header__title">TornadoTracker</span>
     </div>
     <div class="app-header__actions">
@@ -39,27 +39,35 @@ export function initHeader() {
   const officeHost = document.getElementById('office-filter-host');
   const officeInput = document.getElementById('office-filter');
   const officeToggle = document.getElementById('office-filter-toggle');
+  const officeInputWrap = document.getElementById('office-filter-input-wrap');
+  const officeClear = document.getElementById('office-filter-clear');
+
+  function refreshOfficeClear() {
+    if (officeClear) officeClear.hidden = !officeInput?.value.trim();
+  }
 
   function expandOfficeFilter() {
     officeHost?.classList.remove('office-filter--collapsed');
-    if (officeInput) {
-      officeInput.hidden = false;
-      officeInput.focus();
-    }
+    if (officeInputWrap) officeInputWrap.hidden = false;
     if (officeToggle) officeToggle.hidden = true;
+    refreshOfficeClear();
+    officeInput?.focus();
   }
 
   function collapseOfficeFilter() {
     officeHost?.classList.add('office-filter--collapsed');
-    if (officeInput) officeInput.hidden = true;
+    if (officeInputWrap) officeInputWrap.hidden = true;
     if (officeToggle) officeToggle.hidden = false;
   }
 
   officeToggle?.addEventListener('click', expandOfficeFilter);
 
+  officeInput?.addEventListener('input', refreshOfficeClear);
+
   officeInput?.addEventListener('change', () => {
     const value = officeInput.value.trim().toUpperCase();
     officeInput.value = value;
+    refreshOfficeClear();
     document.dispatchEvent(new CustomEvent('tt:office-changed', { detail: value }));
   });
 
@@ -68,6 +76,14 @@ export function initHeader() {
   // see / edit / clear it without re-clicking the disclosure.
   officeInput?.addEventListener('blur', () => {
     if (!officeInput.value.trim()) collapseOfficeFilter();
+  });
+
+  officeClear?.addEventListener('click', () => {
+    if (!officeInput) return;
+    officeInput.value = '';
+    refreshOfficeClear();
+    document.dispatchEvent(new CustomEvent('tt:office-changed', { detail: '' }));
+    officeInput.focus();
   });
 
   document.getElementById('refresh-btn').addEventListener('click', () => {
@@ -165,12 +181,14 @@ function paintChips() {
   const allKeys = Object.keys(CATEGORIES);
   const allChecked = allKeys.every(k => selectedSet.has(k));
 
+  const HIGH_SEVERITY = new Set(['EMERGENCY', 'ALERT']);
   const chips = Object.entries(CATEGORIES).map(([key, cat]) => {
     const isChecked = selectedSet.has(key);
     const checkedClass = isChecked ? 'filter-chip--checked' : '';
+    const severityClass = HIGH_SEVERITY.has(key) ? 'filter-chip--severe' : '';
     const label = cat.shortLabel || cat.label;
     return `
-      <label class="filter-chip ${checkedClass}" style="--filter-chip-color:${cat.color};">
+      <label class="filter-chip ${checkedClass} ${severityClass}" style="--filter-chip-color:${cat.color};">
         <input type="checkbox" value="${key}" ${isChecked ? 'checked' : ''}
                class="type-filter-cb sr-only"
                aria-label="${cat.label}" />

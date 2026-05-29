@@ -62,6 +62,7 @@ async function init() {
   initRouter();
 
   setupTabSwitching();
+  setupTabCounts();
   setupEventListeners();
   setupOfflineDetection();
   registerServiceWorker();
@@ -385,6 +386,19 @@ function setupTabSwitching() {
       }
     });
   });
+}
+
+// ── Tab Counts ────────────────────────────────
+
+function setupTabCounts() {
+  const updateCount = (id, n) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = n > 0 ? n : '';
+    el.hidden = !(n > 0);
+  };
+  store.subscribe('products',      (p) => updateCount('feed-tab-count',   p?.length || 0));
+  store.subscribe('searchResults', (r) => updateCount('search-tab-count', r?.length || 0));
 }
 
 // ── Event Listeners ───────────────────────────

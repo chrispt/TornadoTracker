@@ -34,6 +34,10 @@
     <!-- Header -->
     <header class="app-header" id="app-header"></header>
 
+    <!-- Emergency banner — full-width red strip when one or more tornado
+         emergencies are active. Hidden when empty. -->
+    <div class="emergency-banner" id="emergency-banner" role="alert" aria-live="assertive" hidden></div>
+
     <!-- Stats bar -->
     <div class="stats-bar" id="stats-bar" aria-live="polite"></div>
 
@@ -42,7 +46,9 @@
       role="separator" aria-orientation="vertical" aria-label="Resize sidebar" title="Drag to resize · Double-click to reset"></div>
     <div class="sidebar" id="sidebar">
       <div class="sidebar__filters">
+        <div class="sidebar__section-label">Categories</div>
         <div class="sidebar__chips" id="type-filters" role="group" aria-label="Category filters"></div>
+        <div class="sidebar__section-label">Filter by area</div>
         <div class="sidebar__scope">
           <div id="locations-host"></div>
           <div class="office-filter office-filter--collapsed" id="office-filter-host">
@@ -50,17 +56,28 @@
               aria-label="Filter by NWS Weather Forecast Office code">
               <span aria-hidden="true">+</span> Office
             </button>
-            <input type="text" id="office-filter" class="office-filter__input"
-              placeholder="Office (e.g. KBMX)"
-              aria-label="NWS Weather Forecast Office code"
-              hidden />
+            <div class="office-filter__input-wrap" hidden id="office-filter-input-wrap">
+              <input type="text" id="office-filter" class="office-filter__input"
+                placeholder="Office (e.g. KBMX)"
+                aria-label="NWS Weather Forecast Office code" />
+              <button type="button" class="office-filter__clear" id="office-filter-clear"
+                aria-label="Clear office filter" title="Clear">&times;</button>
+            </div>
           </div>
         </div>
       </div>
       <div class="sidebar__tabs" role="tablist">
-        <button class="sidebar__tab sidebar__tab--active" data-tab="feed" role="tab" aria-selected="true">Feed</button>
-        <button class="sidebar__tab" data-tab="search" role="tab" aria-selected="false">Search</button>
-        <button class="sidebar__tab sidebar__tab--mobile-only" data-tab="map" role="tab" aria-selected="false">Map</button>
+        <button class="sidebar__tab sidebar__tab--active" data-tab="feed" role="tab" aria-selected="true">
+          <span class="sidebar__tab-label">Feed</span>
+          <span class="sidebar__tab-count" id="feed-tab-count" hidden></span>
+        </button>
+        <button class="sidebar__tab" data-tab="search" role="tab" aria-selected="false">
+          <span class="sidebar__tab-label">Search</span>
+          <span class="sidebar__tab-count" id="search-tab-count" hidden></span>
+        </button>
+        <button class="sidebar__tab sidebar__tab--mobile-only" data-tab="map" role="tab" aria-selected="false">
+          <span class="sidebar__tab-label">Map</span>
+        </button>
       </div>
       <div class="sidebar__content" id="sidebar-content">
         <div id="feed-container"></div>

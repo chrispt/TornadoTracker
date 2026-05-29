@@ -49,21 +49,28 @@ function renderStats() {
     if (tvsCells.length > 0) radarIndicated = tvsCells.length;
   }
 
-  // Pin the high-priority items so they're always visible even when the
-  // bar overflows on narrow viewports — emergency first, then radar.
-  // Lower-priority items (outlook chip, category counts) trail and may
-  // scroll horizontally on phones.
-  let html = '<div class="stats-bar__pinned">';
-
+  // Tornado emergencies are the single most consequential alert in the
+  // system, so they live in their own full-width banner above the stats
+  // strip — not crowded among the chip counts. Hidden when zero.
+  const emergencyBanner = document.getElementById('emergency-banner');
   const emergencyCount = catCounts.EMERGENCY || 0;
-  if (emergencyCount > 0) {
-    html += `
-      <div class="stats-bar__emergency" role="alert" aria-live="assertive">
-        <span class="stats-bar__emergency-icon" aria-hidden="true">⚠</span>
+  if (emergencyBanner) {
+    if (emergencyCount > 0) {
+      emergencyBanner.innerHTML = `
+        <span class="emergency-banner__icon" aria-hidden="true">⚠</span>
         <span>${emergencyCount} Active Tornado Emergency${emergencyCount > 1 ? 's' : ''}</span>
-      </div>
-    `;
+      `;
+      emergencyBanner.hidden = false;
+    } else {
+      emergencyBanner.innerHTML = '';
+      emergencyBanner.hidden = true;
+    }
   }
+
+  // Pin the radar callout in the stats strip so it stays visible when
+  // the bar overflows. Lower-priority items (outlook chip, category
+  // counts) trail and may scroll horizontally on phones.
+  let html = '<div class="stats-bar__pinned">';
 
   if (radarConfirmed > 0) {
     html += `

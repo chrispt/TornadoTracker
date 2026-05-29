@@ -14,6 +14,14 @@
   font-size: 13px;
 }
 
+/* Back makes no sense on desktop — the feed and detail are visible side by
+   side. It's only useful on mobile where detail takes over the viewport. */
+@media (min-width: 769px) {
+  .detail-view__back {
+    display: none;
+  }
+}
+
 .detail-view__title {
   font-size: 16px;
   font-weight: 600;

@@ -1,15 +1,44 @@
 /* Layout */
 #app {
   display: grid;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto auto auto 1fr;
   --sidebar-w: 380px;
   grid-template-columns: var(--sidebar-w) 5px 1fr;
   grid-template-areas:
-    "header  header  header"
-    "stats   stats   stats"
-    "sidebar rsz     main";
+    "header     header     header"
+    "emergency  emergency  emergency"
+    "stats      stats      stats"
+    "sidebar    rsz        main";
   height: 100vh;
   overflow: hidden;
+}
+
+/* Emergency banner — own row, full-width, only shown when active.
+   Pulses red so it cannot be missed; trumps everything else on the page. */
+.emergency-banner {
+  grid-area: emergency;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px var(--space-md);
+  background: var(--danger);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  animation: pulse-alert 1.6s ease-in-out infinite;
+  border-bottom: 2px solid color-mix(in srgb, var(--danger) 70%, #000);
+}
+
+.emergency-banner[hidden] {
+  display: none;
+}
+
+.emergency-banner__icon {
+  font-size: 18px;
+  line-height: 1;
 }
 
 /* Resize handles — shared base */
@@ -80,22 +109,18 @@
 }
 
 .app-header__mark {
-  font-size: 22px;
-  filter: hue-rotate(-10deg) saturate(0.85);
-  opacity: 0.9;
+  width: 22px;
+  height: 22px;
+  display: block;
+  opacity: 0.95;
 }
 
 .app-header__title {
   font-size: var(--text-xl);
   font-weight: 700;
-  letter-spacing: -0.6px;
+  letter-spacing: -0.4px;
   white-space: nowrap;
-  background: linear-gradient(135deg,
-    var(--text-primary) 0%,
-    color-mix(in srgb, var(--text-primary) 65%, var(--accent)) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-primary);
 }
 
 .app-header__actions {
@@ -144,9 +169,19 @@
   outline-offset: 2px;
 }
 
+.office-filter__input-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.office-filter__input-wrap[hidden] {
+  display: none;
+}
+
 .office-filter__input {
   width: 130px;
-  padding: 6px 10px;
+  padding: 6px 26px 6px 10px; /* room for the clear button on the right */
   border-radius: 999px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -155,6 +190,36 @@
   letter-spacing: 0.4px;
   text-transform: uppercase;
   transition: border-color var(--transition-fast);
+}
+
+.office-filter__clear {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.office-filter__clear:hover,
+.office-filter__clear:focus-visible {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.office-filter__clear[hidden] {
+  display: none;
 }
 
 .office-filter__input::placeholder {
@@ -214,6 +279,24 @@
   height: 7px;
   border-radius: 50%;
   display: inline-block;
+}
+
+/* High-severity tiers (EMERGENCY, ALERT) get a stronger border + slightly
+   heavier label so the chip row has its own micro-hierarchy. */
+.filter-chip--severe {
+  font-weight: 600;
+  border-color: color-mix(in srgb, var(--filter-chip-color, var(--accent)) 50%, var(--border-color));
+}
+
+.filter-chip--severe .filter-chip__dot {
+  width: 8px;
+  height: 8px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--filter-chip-color, var(--accent)) 35%, transparent);
+}
+
+.filter-chip--severe.filter-chip--checked {
+  border-color: color-mix(in srgb, var(--filter-chip-color, var(--accent)) 80%, transparent);
+  background: color-mix(in srgb, var(--filter-chip-color, var(--accent)) 22%, var(--bg-card));
 }
 
 /* Stats bar — "today's situation" strip */
@@ -289,25 +372,6 @@
   letter-spacing: 0.4px;
 }
 
-.stats-bar__emergency {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
-  background: var(--danger);
-  color: #fff;
-  border-radius: 4px;
-  font-weight: 700;
-  font-size: 12px;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-  animation: pulse-alert 1.6s ease-in-out infinite;
-}
-
-.stats-bar__emergency-icon {
-  font-size: 14px;
-}
-
 @keyframes pulse-alert {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 70%, transparent); }
   50%      { box-shadow: 0 0 0 8px color-mix(in srgb, var(--danger) 0%, transparent); }
@@ -373,6 +437,25 @@
 
 .sidebar__chips {
   margin-bottom: 10px;
+}
+
+/* Small section header above each control cluster — gives the row
+   a name without stealing space ("Categories", "Filter by area"). */
+.sidebar__section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-faint);
+  margin: 0 0 6px;
+}
+
+.sidebar__section-label + .sidebar__chips {
+  margin-bottom: 12px;
+}
+
+.sidebar__chips + .sidebar__section-label {
+  margin-top: 2px;
 }
 
 .sidebar__chips-row {
@@ -464,6 +547,35 @@
   border-bottom: 2px solid transparent;
   transition: color var(--transition-fast), border-color var(--transition-fast);
   letter-spacing: 0.2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.sidebar__tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.sidebar__tab--active .sidebar__tab-count {
+  background: color-mix(in srgb, var(--accent) 22%, var(--bg-card));
+  color: var(--text-primary);
+}
+
+.sidebar__tab-count[hidden] {
+  display: none;
 }
 
 .sidebar__tab:hover {
@@ -550,9 +662,10 @@
 @media (max-width: 768px) {
   #app {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto 1fr;
+    grid-template-rows: auto auto auto 1fr;
     grid-template-areas:
       "header"
+      "emergency"
       "stats"
       "sidebar";
   }
