@@ -5,3 +5,6 @@ dist/
 *.jpg
 
 .vercel
+
+# Per-user Claude Code overrides (holds local secrets like FIGMA_API_KEY)
+.claude/settings.local.json
