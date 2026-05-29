@@ -50,6 +50,11 @@ export function initMapView() {
 
   store.subscribe('products', renderMap);
   store.subscribe('selectedProductId', focusSelected);
+  // When a clicked card's detail/parsed data arrives after the click,
+  // rebuild layers so the new geometry is on the map and the in-flight
+  // selection can finally pan/zoom (see renderMap's retry hook).
+  store.subscribe('parsedTornadoData', renderMap);
+  store.subscribe('selectedProductDetail', renderMap);
   store.subscribe('activeLocationId', renderRadius);
   store.subscribe('radiusMiles', renderRadius);
   store.subscribe('radarVisible', applyRadarVisibility);
@@ -235,9 +240,9 @@ function focusSelected(id) {
   // flyTo / flyToBounds give a smooth animated pan rather than the abrupt
   // jump of setView / fitBounds — better UX when bouncing between feed cards.
   if (layer.getBounds) {
-    map.flyToBounds(layer.getBounds().pad(0.5), { maxZoom: 10, duration: 0.6 });
+    map.flyToBounds(layer.getBounds().pad(0.15), { maxZoom: 11, duration: 0.6 });
   } else if (layer.getLatLng) {
-    map.flyTo(layer.getLatLng(), Math.max(map.getZoom(), 9), { duration: 0.6 });
+    map.flyTo(layer.getLatLng(), Math.max(map.getZoom(), 11), { duration: 0.6 });
   }
 }
 
